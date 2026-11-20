@@ -13,7 +13,7 @@
   #define BinDir "..\target\release"
 #endif
 
-#define AppName      "DOCX2HWPX-HLT"
+#define AppName      "DOCX_2_HWPX_OR_HLT"
 #define AppNameKo    "특허 명세서 변환"
 #define GuiExe       "docx2hwpx-hlt-gui.exe"
 #define CliExe       "docx2hwpx-hlt.exe"
@@ -26,7 +26,7 @@ AppId={{6E0B3F1C-2D7A-4C55-9B8E-D2C4A1F0B7E3}
 AppName={#AppName}
 AppVerName={#AppNameKo} {#AppVersion}
 AppVersion={#AppVersion}
-AppPublisher=DOCX2HWPX-HLT
+AppPublisher=lmg6983-dotcom
 AppPublisherURL={#AppUrl}
 AppSupportURL={#AppUrl}/issues
 AppUpdatesURL={#AppUrl}/releases
@@ -42,6 +42,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 SetupIconFile=..\assets\icon.ico
+LicenseFile=..\LICENSE
 UninstallDisplayIcon={app}\{#GuiExe}
 UninstallDisplayName={#AppNameKo} ({#AppName})
 WizardStyle=modern
@@ -81,6 +82,7 @@ Source: "{#BinDir}\{#GuiExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BinDir}\{#CliExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md";        DestDir: "{app}"; Flags: ignoreversion isreadme
 Source: "..\AGENTS.md";        DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE";          DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#AppNameKo}";        Filename: "{app}\{#GuiExe}"; Comment: "Word(.docx) → HLT · HWPX"

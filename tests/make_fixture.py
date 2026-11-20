@@ -66,6 +66,33 @@ def drawing(rid, cx, cy, n):
     )
 
 
+def group(n):
+    """ChemDraw 를 「도형으로 변환」한 꼴: 그룹 안에 그림 · 벡터 경로(고리) · 화살표 · 글상자(NaBH₄)."""
+    hexagon = "".join(
+        f'<a:{"moveTo" if i == 0 else "lnTo"}><a:pt x="{x}" y="{y}"/></a:{"moveTo" if i == 0 else "lnTo"}>'
+        for i, (x, y) in enumerate([(50, 0), (100, 25), (100, 75), (50, 100), (0, 75), (0, 25)])
+    )
+    ln = '<a:ln w="12700"><a:solidFill><a:srgbClr val="000000"/></a:solidFill>{}</a:ln>'
+    return (
+        f'<w:r><w:drawing><wp:inline><wp:extent cx="2400000" cy="800000"/><wp:docPr id="{n}" name="Group {n}"/>'
+        '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup">'
+        '<wpg:wgp><wpg:cNvGrpSpPr/><wpg:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2400000" cy="800000"/>'
+        '<a:chOff x="0" y="0"/><a:chExt cx="4800000" cy="1600000"/></a:xfrm></wpg:grpSpPr>'
+        '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="90" name="part"/><pic:cNvPicPr/></pic:nvPicPr>'
+        '<pic:blipFill><a:blip r:embed="rIdImg"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+        '<pic:spPr><a:xfrm><a:off x="3400000" y="200000"/><a:ext cx="1200000" cy="1200000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'
+        '<wps:wsp><wps:cNvPr id="91" name="ring"/><wps:cNvSpPr/><wps:spPr><a:xfrm><a:off x="200000" y="200000"/><a:ext cx="1200000" cy="1200000"/></a:xfrm>'
+        f'<a:custGeom><a:pathLst><a:path w="100" h="100">{hexagon}<a:close/></a:path></a:pathLst></a:custGeom>{ln.format("")}</wps:spPr><wps:bodyPr/></wps:wsp>'
+        '<wps:wsp><wps:cNvPr id="92" name="arrow"/><wps:cNvSpPr/><wps:spPr><a:xfrm><a:off x="1700000" y="800000"/><a:ext cx="1400000" cy="0"/></a:xfrm>'
+        f'<a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom>{ln.format(chr(60) + "a:tailEnd type=" + chr(34) + "triangle" + chr(34) + "/>")}</wps:spPr><wps:bodyPr/></wps:wsp>'
+        '<wps:wsp><wps:cNvPr id="93" name="reagent"/><wps:cNvSpPr txBox="1"/><wps:spPr><a:xfrm><a:off x="1700000" y="300000"/><a:ext cx="1400000" cy="400000"/></a:xfrm>'
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></wps:spPr><wps:txbx><w:txbxContent><w:p><w:pPr><w:jc w:val="center"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>NaBH</w:t></w:r><w:r><w:rPr><w:sz w:val="20"/><w:vertAlign w:val="subscript"/></w:rPr><w:t>4</w:t></w:r></w:p></w:txbxContent></wps:txbx>'
+        '<wps:bodyPr lIns="0" tIns="0" rIns="0" bIns="0"/></wps:wsp>'
+        "</wpg:wgp></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>"
+    )
+
+
 def tc(content, w, span=None, vmerge=None):
     pr = f'<w:tcW w:w="{w}" w:type="dxa"/>'
     if span:
@@ -115,7 +142,13 @@ body = "".join(
         p(t("【발명의 명칭】")),
         p(t("시험용 발명")),
         p(t("【기술분야】")),
-        p(t("【0001】 CO₂ 농도 10⁻³ mol/m³, 25 °C – 범위, x̂ 와 ŷ, Müller 법, 기호 "), '<w:r><w:sym w:font="Symbol" w:char="F062"/></w:r>', t(" 및 Hₙ.")),
+        p(t("【0001】 CO₂ 농도 10⁻³ mol/m³, 25 °C – 범위, x̂ 와 ŷ, Müller 법, 기호 "), '<w:r><w:sym w:font="Symbol" w:char="F062"/></w:r>', t(" 및 Hₙ. "),
+          # Symbol 글꼴 글(a → α · Ò → ® · U+F0B4 → ×), 줄 안 나뉘는 하이픈, 풀어쓴 한글, 일본어 가운뎃점
+          '<w:r><w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol"/></w:rPr><w:t>a\u00d2\uf0b4</w:t></w:r>',
+          '<w:r><w:t>1</w:t><w:noBreakHyphen/><w:t>2</w:t></w:r>', t(" \u1112\u1161\u11ab\u30fb끝 "),
+          # 글자 스타일로만 받은 Symbol 글꼴(b → β), MT Extra(h → ℏ), ≈ → ≒
+          '<w:r><w:rPr><w:rStyle w:val="SymChar"/></w:rPr><w:t>b</w:t></w:r>',
+          '<w:r><w:rPr><w:rFonts w:ascii="MT Extra" w:hAnsi="MT Extra"/></w:rPr><w:t>h</w:t></w:r>', t(" ≈ 1")),
         p(t("【0002】 식 "), omath(ssup(mr("x"), mr("2")), mr("+"), ssub(mr("y"), mr("1"))), t(" 은 본문 수식이다. 수정 "), '<w:ins w:id="1" w:author="a">' + t("넣은 글") + "</w:ins>", '<w:del w:id="2" w:author="a"><w:r><w:delText>지운 글</w:delText></w:r></w:del>', t(".")),
         *equations,
         p(t("【0003】 표는 다음과 같다.")),
@@ -129,6 +162,11 @@ body = "".join(
                 '<w:trPr><w:del w:id="9" w:author="a"/></w:trPr>' + tc(p(t("지운 줄")), 3600, span=2) + tc(p(t("지운 줄")), 1800),
             ],
         ),
+        # hlt-core 가 거부하던 표: 소수 열 너비 · 줄 앞 빈 자리 · 칸이 모자란 줄 · 위가 없는 세로 병합 · 콘텐츠 컨트롤 칸
+        '<w:tbl><w:tblPr><w:tblInd w:w="100.5" w:type="dxa"/></w:tblPr><w:tblGrid><w:gridCol w:w="1800.4"/><w:gridCol w:w="1800"/><w:gridCol/></w:tblGrid>'
+        f'<w:tr>{tc(p(t("화합물")), 1800, vmerge="continue")}{tc(p(t("구조")), 1800)}{tc(p(t("수율")), 1800)}</w:tr>'
+        f'<w:tr>{tc(p(), 1800, vmerge="continue")}<w:sdt><w:sdtPr/><w:sdtContent>{tc(p(t("화합물 A")), 1800)}</w:sdtContent></w:sdt></w:tr>'
+        f'<w:tr><w:trPr><w:gridBefore w:val="1"/></w:trPr>{tc(p(t("화합물 B")), 1800)}{tc(p(t("92%")), 1800)}</w:tr></w:tbl>',
         p(t("【0004】 WMF 와 EMF 그림: "), drawing("rIdWmf", 1800000, 900000, 3), drawing("rIdEmf", 1800000, 900000, 4)),
         # 옛 OLE 수식(Equation 3.0 · MathType): VML 에 WMF 미리보기만 있다
         p(t("【0005】 OLE 수식 "), '<w:r><w:object><v:shape style="width:60pt;height:20pt"><v:imagedata r:id="rIdWmf"/></v:shape></w:object></w:r>', t(" 끝.")),
@@ -168,6 +206,11 @@ body = "".join(
         p(t("【도면】")),
         p(t("【도 1】")),
         p(drawing("rIdImg", 1800000, 1200000, 5)),
+        # SVG 그림(Word 365 아이콘) · 링크로만 연결된 그림 — hlt-core 가 거부하던 그림 관계
+        p(t("【0009】 SVG "), drawing("rIdSvg", 900000, 450000, 7), t(" 와 링크 그림 "),
+          drawing("rIdLinked", 900000, 600000, 8).replace('r:embed="rIdLinked"', 'r:link="rIdLinked"')),
+        p(t("【도 2】")),
+        p(group(6)),
     ]
 )
 
@@ -176,13 +219,20 @@ ns = (
     'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" '
     'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
     'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" '
-    'xmlns:v="urn:schemas-microsoft-com:vml"'
+    'xmlns:v="urn:schemas-microsoft-com:vml" '
+    'xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" '
+    'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"'
 )
 document = f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document {ns}><w:body>{body}<w:sectPr/></w:body></w:document>'
 img = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 rels = (
     '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    '<Relationship Id="rIdSty" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
     f'<Relationship Id="rIdImg" Type="{img}" Target="media/image1.png"/>'
+    f'<Relationship Id="rIdSvg" Type="{img}" Target="media/icon.svg"/>'
+    f'<Relationship Id="rIdLinked" Type="{img}" Target="file:///C:/figs/fig1.png" TargetMode="External"/>'
+    # 파일이 없는 관계(본문은 쓰지 않는다) — 조용히 지운다
+    f'<Relationship Id="rIdGone" Type="{img}" Target="media/gone.png"/>'
     f'<Relationship Id="rIdWmf" Type="{img}" Target="media/image2.wmf"/>'
     f'<Relationship Id="rIdEmf" Type="{img}" Target="media/image3.emf"/>'
     '<Relationship Id="rIdCm" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="comments.xml"/>'
@@ -192,7 +242,7 @@ rels = (
 types = (
     '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
     '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-    '<Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/>'
+    '<Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="svg" ContentType="image/svg+xml"/>'
     '<Default Extension="wmf" ContentType="image/x-wmf"/><Default Extension="emf" ContentType="image/x-emf"/>'
     '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
     '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>'
@@ -204,6 +254,12 @@ comments = (
 )
 comments_ex = '<?xml version="1.0" encoding="UTF-8"?><w15:commentsEx xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"/>'
 
+styles = (
+    '<?xml version="1.0" encoding="UTF-8"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    '<w:style w:type="character" w:styleId="SymBase"><w:name w:val="Sym Base"/><w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol"/></w:rPr></w:style>'
+    '<w:style w:type="character" w:styleId="SymChar"><w:name w:val="Sym Char"/><w:basedOn w:val="SymBase"/></w:style></w:styles>'
+)
+
 root_rels = (
     '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'
@@ -213,10 +269,15 @@ with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
     z.writestr("[Content_Types].xml", types)
     z.writestr("_rels/.rels", root_rels)
     z.writestr("word/document.xml", document)
+    z.writestr("word/styles.xml", styles)
     z.writestr("word/_rels/document.xml.rels", rels)
     z.writestr("word/comments.xml", comments)
     z.writestr("word/commentsExtended.xml", comments_ex)
     z.writestr("word/media/image1.png", png(60, 40, (40, 120, 200)))
+    z.writestr(
+        "word/media/icon.svg",
+        '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"><rect x="2" y="2" width="76" height="36" fill="none" stroke="black" stroke-width="3"/></svg>',
+    )
     z.write(here / "fixtures" / "shape.wmf", "word/media/image2.wmf")
     z.write(here / "fixtures" / "shape.emf", "word/media/image3.emf")
 print(out)

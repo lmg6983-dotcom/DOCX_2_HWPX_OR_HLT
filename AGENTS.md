@@ -26,7 +26,7 @@ target/release/docx2hwpx-hlt 명세서.docx --to hlt --json
 
 ```json
 {"ok":true,"input":"a.docx","output":"a.hlt","format":"hlt","dialect":"domestic",
- "revisions_accepted":7,"comments_removed":1,"equations":6,"metafiles":2,"scripts":4,
+ "revisions_accepted":7,"comments_removed":1,"equations":6,"metafiles":2,"shapes":1,"scripts":4,
  "substitutions":[{"from":"–","codepoints":"U+2013","to":"-","count":1}],
  "glyph_images":[{"text":"x̂","codepoints":"U+0078 U+0302","count":1}],
  "warnings":[{"code":"nested_table_flattened","message":"…"}]}
@@ -40,6 +40,7 @@ target/release/docx2hwpx-hlt 명세서.docx --to hlt --json
 | `equations` | 그림으로 넣은 수식(OMML) 수. 최소 14pt로 그린다 |
 | `images_optimized` | HLT 에서 다듬은 그림 수. `--image-dpi`(기본 300, 0 이면 끔) 상한으로 줄이고 흰 바탕 · 회색 잔물결과 채널 하위 2비트를 정리한다 |
 | `metafiles` | PNG 로 바꾼 WMF/EMF(OLE 수식 미리보기 포함) 수 |
+| `shapes` | 그림 한 장으로 구운 Word 그룹 도형 · 벡터 도형 수(ChemDraw 를 「도형으로 변환」한 반응식 등). 그룹 밖 글상자는 그대로 둔다 |
 | `scripts` | 첨자 모양 글자(², ₂)를 첨자 서식으로 바꾼 곳 수 (HLT) |
 | `substitutions` | 모양이 같은 글자로 바꾼 것 (HLT) |
 | `glyph_images` | 글자 그림으로 넣은 글자 (HLT) — 편집기에서 글로 고칠 수 없다 |
@@ -68,13 +69,21 @@ target/release/docx2hwpx-hlt 명세서.docx --to hlt --json
 | `metafile_failed` | 자리표 그림도 넣지 못했다 |
 | `symbol_unmapped` | Symbol 밖 기호 글꼴(Wingdings 등) 글자를 옮기지 못했다 |
 | `glyph_failed` | 글자 그림을 그리지 못해 원래 글자를 남겼다(HLT 에서 실패로 이어질 수 있다) |
+| `shape_partial` | 그룹 도형을 그림으로 구웠지만 일부(낯선 도형 모양 · 경로 명령 · 그룹 안 차트 등)는 빠졌다 |
+| `shape_failed` | 도형을 그림으로 굽지 못해 원래대로 두었다(벡터 도형은 빠진다) |
+| `table_repaired` | 표 구조를 고쳐 넘겼다(HLT: 칸이 모자란 줄 · 줄 앞뒤 빈 자리 · 넘친 칸 합치기 · 위가 없는 세로 병합 · 소수 열 너비 · 콘텐츠 컨트롤 등, 모두: 빈 표 지움). 「표 n」을 편집기에서 확인한다 |
 | `nested_table_flattened` | HLT: 표 칸 안의 표를 글로 풀었다 |
-| `image_missing` | HWPX: DOCX 안에 그림 파일이 없다 |
+| `image_missing` | 그림 파일이 DOCX 안에 없거나 · 읽을 수 없거나 · 링크(파일에 연결)로만 연결돼 「그림 없음」 자리표를 넣었다(SVG 는 PNG 로 바꾸고, 쓰지 않는 깨진 그림 관계는 조용히 지운다). 사용자에게 원본 그림을 문서에 넣어 달라고 한다 |
+| `images_downscaled` | HLT: 문서가 hlt-core 한도(64MB)를 넘어 그림 해상도 상한을 200 · 150 · 100 · 72dpi 로 차례로 낮췄다. 72dpi 로도 넘으면 `convert_failed`(문서를 나누라는 `message`) |
 
 ### 사용자에게 알릴 것
 
 변환 뒤 `warnings` · `glyph_images` · `substitutions` 가 비어 있지 않으면 그 목록을 짧게 전하고,
 **NK-Editor / MOIP-Editor 에서 열어 확인한 뒤 제출하라**고 덧붙인다. 공개 사양이 없는 형식이다.
+
+`message`(경고 · 실패 모두)는 사용자용 문장이다: 「【0012】 부근 그림: 무엇이 일어났나 — 어떻게 하면 되나」 꼴이고,
+개발자용 내용은 맨 뒤 ` (기술 정보: …)` 에 있다. 사용자에게는 그 앞까지를 그대로 전하고, 기술 정보는 문의할 때만 덧붙인다.
+문구는 계약이 아니다(바뀔 수 있다) — 분기는 `code` 로 한다. 문구는 `src/messages.rs` 한곳에서 만든다.
 
 ## 고치기 (이 저장소에서 일할 때)
 
@@ -87,6 +96,9 @@ target/release/docx2hwpx-hlt 명세서.docx --to hlt --json
 | `src/chars.rs` | NK-Editor 글자 규칙(CP949) |
 | `src/omml.rs` | OMML → Typst 수식 |
 | `src/render.rs` | Typst · resvg 로 PNG 굽기 |
+| `src/shapes.rs` | Word 그룹 도형 · 벡터 도형 → SVG |
+| `src/tables.rs` | HLT 표 구조 바로잡기(hlt-core 표 판독이 거부하는 꼴) |
+| `src/messages.rs` | 사용자에게 보이는 경고 · 실패 문구(어디서 — 무엇이 — 어떻게, 기술 정보는 괄호) |
 | `src/hwpx.rs` | 고쳐 쓴 DOCX → HWPX(HwpForge) |
 | `tests/make_fixture.py` | 시험용 DOCX 생성기 → `tests/fixtures/sample.docx` |
 | `build.rs` · `assets/` | 윈도 exe 아이콘 · 버전 정보, 아이콘/배너 생성 스크립트 |
@@ -101,3 +113,4 @@ python3 tests/make_fixture.py   # 고정 자료를 바꿨을 때만
 - JSON 필드 · 실패 코드 · 경고 코드는 계약이다. 바꾸면 이 파일과 `tests/convert.rs` 를 함께 고친다.
 - 새 경고는 `normalize::Warnings` 에 코드와 함께 넣고 위 표에 더한다.
 - 실제 출원 명세서는 저장소에 넣지 않는다.
+- 사용자에게 보이는 변경은 `CHANGELOG.md` 의 `[Unreleased]` 에 더한다. 커밋 · PR 제목 · 릴리스 순서는 [CONTRIBUTING.md](CONTRIBUTING.md).

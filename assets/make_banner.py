@@ -44,7 +44,7 @@ def main():
     img.alpha_composite(icon, (84 * K, 126 * K))
 
     x = 292 * K
-    d.text((x, 104 * K), "DOCX2HWPX-HLT", font=font("NanumSquareB.ttf", 64), fill=(255, 255, 255))
+    d.text((x, 104 * K), "DOCX_2_HWPX_OR_HLT", font=font("NanumSquareB.ttf", 58), fill=(255, 255, 255))
     d.text((x, 192 * K), "Word 특허 명세서를 특허청 전자출원 편집기 파일로", font=font("NanumGothicBold.ttf", 30), fill=(0xDB, 0xE7, 0xFF))
 
     # 형식 알약: DOCX → HLT · HWPX

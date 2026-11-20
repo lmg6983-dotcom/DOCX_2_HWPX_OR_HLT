@@ -12,6 +12,9 @@ use typst_layout::PagedDocument;
 /// 300 dpi.
 const PIXEL_PER_PT: f64 = 300.0 / 72.0;
 /// 한글 글꼴 후보(윈도 · 맥 · 리눅스). 없는 이름은 Typst 가 건너뛴다.
+/// 흑백 기호 글꼴(☑ ✓ ➢ ⊕ …). 목록에 없으면 Typst 가 아무 글꼴이나 찾아 컬러 이모지(Segoe UI Emoji ·
+/// Noto Color Emoji)로 그린다 — 흑백 명세서에 파란 상자가 들어간다.
+const SYMBOLS: &str = r#""Segoe UI Symbol", "Cambria Math", "Apple Symbols", "DejaVu Sans", "Noto Sans Symbols 2", "Noto Sans Symbols", "OpenSymbol""#;
 const KOREAN: &str = r#""Batang", "BatangChe", "AppleMyungjo", "Nanum Myeongjo", "Noto Serif CJK KR", "Malgun Gothic", "Apple SD Gothic Neo", "NanumGothic", "Noto Sans CJK KR""#;
 
 pub struct Png {
@@ -58,7 +61,7 @@ impl Renderer {
         let source = format!(
             "#set page(width: auto, height: auto, margin: 0pt, fill: white)\n\
              #set text(size: {size_pt}pt, top-edge: \"ascender\", bottom-edge: \"descender\", \
-             font: (\"Libertinus Serif\", \"New Computer Modern\", \"New Computer Modern Math\", {KOREAN}))\n\
+             font: (\"Libertinus Serif\", \"New Computer Modern\", \"New Computer Modern Math\", {KOREAN}, {SYMBOLS}))\n\
              #box(inset: (x: 0.5pt))[#\"{escaped}\"]\n"
         );
         self.compile(source)
@@ -132,6 +135,32 @@ pub fn metafile_to_png(bytes: &[u8], is_emf: bool) -> Result<Vec<u8>, String> {
         wmf_core::converter::convert_to_svg(bytes).map_err(|e| format!("WMF: {e:?}"))?
     };
     svg_to_png(&svg)
+}
+
+/// Word 도형을 모은 SVG([`crate::shapes`]) → 300dpi PNG(긴 변 4000px 까지).
+pub fn shapes_to_png(svg: &str, width_pt: f64, height_pt: f64) -> Result<Vec<u8>, String> {
+    let mut options = resvg::usvg::Options::default();
+    options.fontdb_mut().load_system_fonts();
+    let tree =
+        resvg::usvg::Tree::from_data(svg.as_bytes(), &options).map_err(|e| format!("SVG: {e}"))?;
+    let px = |pt: f64| pt / 72.0 * 300.0;
+    let fit = (4000.0 / px(width_pt).max(px(height_pt))).min(1.0);
+    let width = ((px(width_pt) * fit).ceil() as u32).max(1);
+    let height = ((px(height_pt) * fit).ceil() as u32).max(1);
+    let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height).ok_or("SVG 크기")?;
+    pixmap.fill(resvg::tiny_skia::Color::WHITE);
+    let size = tree.size();
+    let transform = resvg::tiny_skia::Transform::from_scale(
+        width as f32 / size.width(),
+        height as f32 / size.height(),
+    );
+    resvg::render(&tree, transform, &mut pixmap.as_mut());
+    pixmap.encode_png().map_err(|e| e.to_string())
+}
+
+/// DOCX 에 든 SVG 그림(Word 365 아이콘 · 그래픽) → PNG.
+pub fn svg_image_to_png(svg: &[u8]) -> Result<Vec<u8>, String> {
+    svg_to_png(svg)
 }
 
 fn svg_to_png(svg: &[u8]) -> Result<Vec<u8>, String> {

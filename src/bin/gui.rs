@@ -579,7 +579,10 @@ impl App {
                 if matches!(j.state, JobState::Running) {
                     j.state = JobState::Failed(docx2hwpx_hlt::fail(
                         "convert_failed",
-                        "변환 중 예기치 않은 오류로 멈췄습니다",
+                        docx2hwpx_hlt::messages::with_tech(
+                            "변환 중에 예기치 않은 오류로 멈췄습니다. 문서를 다시 저장한 뒤 한 번 더 변환해 보고, 그래도 안 되면 이 메시지와 함께 개발자에게 알려 주세요.",
+                            "변환 스레드가 결과 없이 끝남",
+                        ),
                     ));
                 }
             }
@@ -640,7 +643,10 @@ fn run_batch(
             Err(e) => (
                 Err(docx2hwpx_hlt::fail(
                     "input_unreadable",
-                    format!("{}: {e}", input.display()),
+                    docx2hwpx_hlt::messages::input_unreadable(
+                        &file_name(&input),
+                        &format!("{}: {e}", input.display()),
+                    ),
                 )),
                 Value::Null,
             ),
@@ -657,7 +663,10 @@ fn run_batch(
                     Err(_) => (
                         Err(docx2hwpx_hlt::fail(
                             "convert_failed",
-                            "변환 중 예기치 않은 오류로 멈췄습니다",
+                            docx2hwpx_hlt::messages::with_tech(
+                                "변환 중에 예기치 않은 오류로 멈췄습니다. 문서를 다시 저장한 뒤 한 번 더 변환해 보고, 그래도 안 되면 이 메시지와 함께 개발자에게 알려 주세요.",
+                                "변환 중 panic",
+                            ),
                         )),
                         Value::Null,
                     ),
@@ -1418,7 +1427,7 @@ fn job_row(ui: &mut Ui, p: Pal, job: &mut Job, working: bool, batch: Option<&Bat
             }
             (s, if checks > 0 { p.warn } else { p.ok })
         }
-        JobState::Failed(f) => (explain(f).0.to_string(), p.err),
+        JobState::Failed(f) => (failure_title(f).to_string(), p.err),
     };
 
     let frame = Frame::new()
@@ -1478,10 +1487,20 @@ fn job_row(ui: &mut Ui, p: Pal, job: &mut Job, working: bool, batch: Option<&Bat
             match &job.state {
                 JobState::Done { report, .. } => summary(ui, p, report),
                 JobState::Failed(f) => {
-                    let (what, how) = explain(f);
-                    ui.label(RichText::new(what).font(bold(13.0)).color(p.err));
-                    ui.label(RichText::new(how).size(12.5).color(p.ink));
-                    ui.label(RichText::new(&f.message).size(11.5).color(p.muted));
+                    let (plain, tech) = docx2hwpx_hlt::split_message(&f.message);
+                    ui.label(
+                        RichText::new(failure_title(f))
+                            .font(bold(13.0))
+                            .color(p.err),
+                    );
+                    ui.label(RichText::new(plain).size(12.5).color(p.ink));
+                    if let Some(tech) = tech {
+                        ui.label(
+                            RichText::new(format!("기술 정보(문의할 때 함께 보내 주세요): {tech}"))
+                                .size(11.5)
+                                .color(p.muted),
+                        );
+                    }
                 }
                 _ => {}
             }
@@ -1555,25 +1574,13 @@ fn callout(ui: &mut Ui, fill: Color32, ink: Color32, text: &str) {
         });
 }
 
-/// 실패 코드 → (무엇이 잘못됐나, 어떻게 하나). 원래 메시지는 그 아래 작게.
-fn explain(f: &Failure) -> (&'static str, &'static str) {
+/// 실패 코드 → 제목. 무엇을 하면 되는지는 메시지(사람용 문장)에 있다.
+fn failure_title(f: &Failure) -> &'static str {
     match f.code {
-        "input_unreadable" => (
-            "파일을 읽지 못했습니다",
-            "파일이 옮겨졌거나 다른 프로그램(Word 등)이 열고 있는지 확인한 뒤 다시 변환해 주세요.",
-        ),
-        "invalid_docx" => (
-            "DOCX 파일이 아니거나 손상되었습니다",
-            "Word 에서 열어 「다른 이름으로 저장 → Word 문서(.docx)」로 다시 저장한 뒤 변환해 주세요.",
-        ),
-        "write_failed" => (
-            "저장하지 못했습니다",
-            "저장 폴더의 권한이나 남은 공간을 확인하거나, 다른 폴더를 골라 다시 변환해 주세요.",
-        ),
-        _ => (
-            "변환하지 못했습니다",
-            "문서 구조(표 · 그림 배치)에서 막혔습니다. 아래 내용을 확인하거나, 다른 형식으로 바꿔 시도해 보세요.",
-        ),
+        "input_unreadable" => "파일을 열지 못했습니다",
+        "invalid_docx" => "Word 문서(.docx)가 아니거나 손상되었습니다",
+        "write_failed" => "파일을 저장하지 못했습니다",
+        _ => "변환하지 못했습니다",
     }
 }
 
@@ -1590,6 +1597,7 @@ fn summary(ui: &mut Ui, p: Pal, report: &Value) {
             ("메모 지움", n("comments_removed")),
             ("수식 그림", n("equations")),
             ("WMF/EMF", n("metafiles")),
+            ("도형 묶음", n("shapes")),
             ("첨자 서식", n("scripts")),
             ("그림 다듬음", n("images_optimized")),
         ] {
@@ -1620,11 +1628,15 @@ fn summary(ui: &mut Ui, p: Pal, report: &Value) {
     // 확인할 곳: 경고 + 글자 그림(편집기에서 글로 고칠 수 없다)
     let mut check: Vec<String> = list("warnings")
         .iter()
-        .map(|w| w["message"].as_str().unwrap_or("").to_string())
+        .map(|w| {
+            docx2hwpx_hlt::split_message(w["message"].as_str().unwrap_or(""))
+                .0
+                .to_string()
+        })
         .collect();
     for g in list("glyph_images") {
         check.push(format!(
-            "글자 그림으로 넣음: {} ({}) {}곳",
+            "「{}」({})는 NK-Editor 에 없는 글자라 그림으로 넣었습니다 ({}곳). 편집기에서 글자로 고칠 수 없으니, 고쳐야 하면 Word 원본에서 고친 뒤 다시 변환해 주세요",
             g["text"].as_str().unwrap_or(""),
             g["codepoints"].as_str().unwrap_or(""),
             g["count"]

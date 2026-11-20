@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::io::{Cursor, Read, Write};
 
 use crate::chars::{self, Piece};
+use crate::messages;
 use crate::render::{Png, Renderer};
 use crate::xml::{self, Element, Node};
 
@@ -18,6 +19,7 @@ const DOCUMENT: &str = "word/document.xml";
 const RELS: &str = "word/_rels/document.xml.rels";
 const TYPES: &str = "[Content_Types].xml";
 const COMMENTS: &str = "word/comments.xml";
+const STYLES: &str = "word/styles.xml";
 const IMAGE_REL: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
 const EMU_PER_PT: f64 = 12700.0;
 /// 크기를 적지 않은 글의 크기 — hlt-core 가 HLT 본문에 쓰는 값과 같다.
@@ -32,6 +34,8 @@ pub type Warnings = Vec<(&'static str, String)>;
 pub struct Report {
     pub equations: usize,
     pub metafiles: usize,
+    /// 그림 한 장으로 바꾼 Word 도형 · 그룹 수
+    pub shapes: usize,
     pub scripts: usize,
     pub substitutions: HashMap<(char, String), usize>,
     pub glyph_images: HashMap<String, usize>,
@@ -53,6 +57,14 @@ struct Normalizer<'a> {
     /// 수식 하나를 그릴 때마다 (그린 수, 모두)
     progress: &'a mut dyn FnMut(usize, usize),
     math_total: usize,
+    /// 원래 DOCX 의 부분(그룹 안 그림을 읽는다).
+    parts: HashMap<String, Vec<u8>>,
+    /// 지금까지 만난 표 수(경고에 「문서의 n번째 표」로 쓴다).
+    tables: usize,
+    /// 지금 걷는 자리: 가장 가까운 앞의 식별 번호(【0012】 …). 경고에 「【0012】 부근」으로 쓴다.
+    place: String,
+    /// 그림 관계 id → 그 그림이 처음 나오는 자리(식별 번호).
+    image_places: HashMap<String, String>,
 }
 
 /// `nk_chars` = HLT(NK-Editor) 글자 규칙까지 적용한다.
@@ -98,6 +110,10 @@ pub fn normalize(
         report: Report::default(),
         progress,
         math_total: count_math(&document),
+        parts: parts.iter().cloned().collect(),
+        tables: 0,
+        place: String::new(),
+        image_places: image_places(&document),
     };
     n.convert_metafiles(&parts);
     for (k, v) in [
@@ -115,6 +131,10 @@ pub fn normalize(
         }
     }
     accept_revisions(&mut document, &mut n.report.revisions_accepted);
+    n.fix_image_relationships(&mut document);
+    if let Some(styles) = get(STYLES).and_then(|b| xml::parse(b).ok()) {
+        apply_style_symbol_fonts(&mut document, &style_fonts(&styles));
+    }
     n.walk(&mut document);
 
     // 메모: 본문 자리표는 accept_revisions 가 지웠다. 메모 부분(comments*.xml)과 그 관계 · 내용 형식도 뺀다.
@@ -182,10 +202,15 @@ impl Normalizer<'_> {
             let Some((_, bytes)) = parts.iter().find(|(n, _)| *n == path) else {
                 continue;
             };
+            let at = rel
+                .get("Id")
+                .and_then(|id| self.image_places.get(id))
+                .cloned()
+                .unwrap_or_default();
             let png = crate::render::metafile_to_png(bytes, is_emf).or_else(|e| {
                 self.report.warnings.push((
                     "metafile_placeholder",
-                    format!("{target}: {e} — 자리표 그림을 넣습니다"),
+                    messages::metafile_placeholder(&at, target, &e),
                 ));
                 self.renderer
                     .glyph("[그림 변환 실패]", DEFAULT_SIZE_PT)
@@ -198,10 +223,10 @@ impl Normalizer<'_> {
                     retarget.push((rel.get("Id").unwrap_or_default().to_string(), name));
                     self.report.metafiles += 1;
                 }
-                Err(e) => self
-                    .report
-                    .warnings
-                    .push(("metafile_failed", format!("{target}: {e}"))),
+                Err(e) => self.report.warnings.push((
+                    "metafile_failed",
+                    messages::metafile_failed(&at, target, &e),
+                )),
             }
         }
         for node in &mut self.rels.children {
@@ -217,6 +242,150 @@ impl Normalizer<'_> {
                 }
             }
         }
+    }
+
+    /// hlt-core 는 그림 관계를 모두 열어 크기를 읽고, 하나라도 못 읽으면 문서 전체를 멈춘다
+    /// (`structure_invalid (docx_relationships · docx_document)`). 그래서 미리
+    /// - SVG 그림은 PNG 로 바꾸고
+    /// - 파일이 없거나 · 읽을 수 없거나 · 링크(`TargetMode="External"`)로만 연결된 그림은
+    ///   쓰이면 「그림 없음」 자리표로(경고 `image_missing`), 쓰이지 않으면 관계를 지운다
+    /// - 본문의 `a:blip` 이 `r:link` 만 가지면 `r:embed` 로, VML 이 `o:relid` 만 가지면 `r:id` 로,
+    ///   없는 관계를 가리키면 자리표 관계로 잇는다.
+    fn fix_image_relationships(&mut self, document: &mut Element) {
+        let mut used = std::collections::HashSet::new();
+        collect_image_refs(document, &mut used);
+        let mut placeholder: Option<String> = None;
+        let mut retarget: Vec<(String, Option<String>)> = Vec::new(); // (관계 id, 새 Target · None = 지움)
+        let rels: Vec<Element> = self.rels.elements().cloned().collect();
+        for rel in &rels {
+            if !rel.get("Type").is_some_and(|t| t.ends_with("/image")) {
+                continue;
+            }
+            let id = rel.get("Id").unwrap_or_default().to_string();
+            let target = rel.get("Target").unwrap_or_default().to_string();
+            let external = rel
+                .get("TargetMode")
+                .is_some_and(|m| m.eq_ignore_ascii_case("external"));
+            use messages::MissingPicture as Why;
+            let problem = if external {
+                Some(Why::Linked)
+            } else {
+                match self.part_bytes(&target) {
+                    None => Some(Why::NotInFile),
+                    Some(bytes) if readable(&bytes) => None,
+                    Some(bytes) if looks_svg(&target, &bytes) => {
+                        match crate::render::svg_image_to_png(&bytes) {
+                            Ok(png) => {
+                                let n = self.new_files.len() + 1;
+                                let name = format!("media/d2h_svg{n}.png");
+                                self.new_files.push((format!("word/{name}"), png));
+                                retarget.push((id.clone(), Some(name)));
+                                None
+                            }
+                            Err(_) => Some(Why::Svg),
+                        }
+                    }
+                    Some(_) => Some(Why::Unreadable),
+                }
+            };
+            let Some(problem) = problem else { continue };
+            if !used.contains(&id) {
+                retarget.push((id, None));
+                continue;
+            }
+            let name = match &placeholder {
+                Some(name) => name.clone(),
+                None => match self.renderer.glyph("[그림 없음]", DEFAULT_SIZE_PT) {
+                    Ok(png) => {
+                        let name = "media/d2h_missing.png".to_string();
+                        self.new_files.push((format!("word/{name}"), png.bytes));
+                        placeholder = Some(name.clone());
+                        name
+                    }
+                    Err(_) => {
+                        retarget.push((id, None));
+                        continue;
+                    }
+                },
+            };
+            self.report.warnings.push((
+                "image_missing",
+                messages::picture_missing(
+                    self.image_places.get(&id).map_or("", String::as_str),
+                    &target,
+                    problem,
+                ),
+            ));
+            retarget.push((id, Some(name)));
+        }
+        self.rels.children.retain(|n| {
+            !matches!(n, Node::El(r) if retarget.iter().any(|(id, to)| to.is_none() && r.get("Id") == Some(id.as_str())))
+        });
+        for node in &mut self.rels.children {
+            let Node::El(rel) = node else { continue };
+            if let Some((_, Some(to))) = retarget
+                .iter()
+                .find(|(id, _)| rel.get("Id") == Some(id.as_str()))
+            {
+                rel.attrs.retain(|(k, _)| k != "TargetMode");
+                for (k, v) in &mut rel.attrs {
+                    if k == "Target" {
+                        *v = to.clone();
+                    }
+                }
+            }
+        }
+        // 본문 쪽: r:link 만 · o:relid 만 · 없는 관계
+        let ids: std::collections::HashSet<String> = self
+            .rels
+            .elements()
+            .filter_map(|r| r.get("Id").map(str::to_string))
+            .collect();
+        drop_dangling_svg(document, &ids);
+        let mut dangling = 0;
+        fix_image_refs(document, &ids, &mut |_| {
+            dangling += 1;
+        });
+        if dangling > 0 {
+            let id = "rIdD2hMissing".to_string();
+            let target = match &placeholder {
+                Some(name) => Some(name.clone()),
+                None => self
+                    .renderer
+                    .glyph("[그림 없음]", DEFAULT_SIZE_PT)
+                    .ok()
+                    .map(|png| {
+                        let name = "media/d2h_missing.png".to_string();
+                        self.new_files.push((format!("word/{name}"), png.bytes));
+                        name
+                    }),
+            };
+            if let Some(target) = target {
+                self.rels.children.push(Node::El(
+                    Element::new("Relationship")
+                        .attr("Id", &id)
+                        .attr("Type", IMAGE_REL)
+                        .attr("Target", &target),
+                ));
+                point_dangling(document, &ids, &id);
+                self.report
+                    .warnings
+                    .push(("image_missing", messages::pictures_dangling(dangling)));
+            }
+        }
+    }
+
+    /// 관계 Target → 바이트(이미 바꾼 그림 먼저).
+    fn part_bytes(&self, target: &str) -> Option<Vec<u8>> {
+        let path = format!(
+            "word/{}",
+            target.trim_start_matches('/').trim_start_matches("word/")
+        );
+        self.new_files
+            .iter()
+            .find(|(n, _)| *n == path)
+            .map(|(_, b)| b.clone())
+            .or_else(|| self.parts.get(&path).cloned())
     }
 
     fn walk(&mut self, el: &mut Element) {
@@ -241,6 +410,9 @@ impl Normalizer<'_> {
                 }
                 "m:oMathPara" | "m:oMath" => out.extend(self.math(&child).map(Node::El)),
                 "w:p" => {
+                    if let Some(marker) = messages::marker_of(&child.text()) {
+                        self.place = marker;
+                    }
                     let display_only = child.elements().any(|e| e.name == "m:oMathPara")
                         && child.elements().all(|e| {
                             matches!(
@@ -254,11 +426,39 @@ impl Normalizer<'_> {
                     }
                     out.push(Node::El(child));
                 }
+                "w:tbl" => {
+                    self.tables += 1;
+                    let n = self.tables;
+                    if !crate::tables::has_rows(&child) {
+                        self.report
+                            .warnings
+                            .push(("table_repaired", messages::table_empty(&self.place, n)));
+                        continue;
+                    }
+                    if self.nk_chars {
+                        let fixed = crate::tables::repair(&mut child);
+                        if !fixed.fixes.is_empty() {
+                            self.report.warnings.push((
+                                "table_repaired",
+                                messages::table_repaired(&self.place, n, &fixed.fixes),
+                            ));
+                        }
+                    }
+                    self.walk(&mut child);
+                    out.push(Node::El(child));
+                }
                 "w:tc" if self.nk_chars => {
                     self.walk(&mut child);
                     self.flatten_cell(&mut child);
                     out.push(Node::El(child));
                 }
+                "w:drawing" => match self.flatten_shapes(&child) {
+                    Some(drawing) => out.push(Node::El(drawing)),
+                    None => {
+                        self.walk(&mut child);
+                        out.push(Node::El(child));
+                    }
+                },
                 "w:object" | "w:pict" => match self.vml_image(&child) {
                     Some(drawing) => out.push(Node::El(drawing)),
                     None => {
@@ -268,6 +468,8 @@ impl Normalizer<'_> {
                 },
                 "w:r" => {
                     self.walk(&mut child);
+                    special_chars(&mut child);
+                    self.symbol_font_text(&mut child);
                     self.symbols(&mut child);
                     if self.nk_chars {
                         out.extend(self.split_run(child).into_iter().map(Node::El));
@@ -310,7 +512,7 @@ impl Normalizer<'_> {
         if nested {
             self.report.warnings.push((
                 "nested_table_flattened",
-                "표 칸 안의 표는 HLT 에서 글(「칸 | 칸 / 다음 줄」)로 풀었습니다".into(),
+                messages::nested_table(&self.place),
             ));
         }
         let mut p = Element::new("w:p");
@@ -334,7 +536,7 @@ impl Normalizer<'_> {
                 // 그리지 못한 수식은 글로라도 남긴다(잃지 않는다).
                 self.report.warnings.push((
                     "equation_as_text",
-                    format!("수식을 그리지 못해 글로 남김: {e} ← {body}"),
+                    messages::equation_as_text(&self.place, &format!("{e} ← {body}")),
                 ));
                 return Some(
                     Element::new("w:r").child(
@@ -383,6 +585,139 @@ impl Normalizer<'_> {
                 .attr("Target", &target),
         ));
         id
+    }
+
+    /// 관계 id → 그림 바이트(WMF/EMF 는 이미 바꾼 PNG) · MIME.
+    fn media(&self, rel_id: &str) -> Option<(Vec<u8>, &'static str)> {
+        let target = self
+            .rels
+            .elements()
+            .find(|r| r.get("Id") == Some(rel_id))?
+            .get("Target")?;
+        let path = format!(
+            "word/{}",
+            target.trim_start_matches('/').trim_start_matches("word/")
+        );
+        let bytes = self
+            .new_files
+            .iter()
+            .find(|(n, _)| *n == path)
+            .map(|(_, b)| b.clone())
+            .or_else(|| self.parts.get(&path).cloned())?;
+        let mime = match bytes.get(..4) {
+            Some([0x89, b'P', b'N', b'G']) => "image/png",
+            Some([0xFF, 0xD8, ..]) => "image/jpeg",
+            Some([b'G', b'I', b'F', _]) => "image/gif",
+            _ => return None,
+        };
+        Some((bytes, mime))
+    }
+
+    /// Word 그룹 도형 · 벡터 도형(`wpg:wgp` · `wps:wsp`)을 원래 배치대로 그림 한 장으로 바꾼다.
+    /// 글상자만 있는 도형(그룹 밖)은 그대로 둔다 — 글을 그림으로 굳히지 않는다.
+    fn flatten_shapes(&mut self, drawing: &Element) -> Option<Element> {
+        let frame = drawing
+            .elements()
+            .find(|e| e.name == "wp:inline" || e.name == "wp:anchor")?;
+        let data = frame.first("a:graphic")?.first("a:graphicData")?;
+        let root = data
+            .elements()
+            .find(|e| e.name == "wpg:wgp" || e.name == "wps:wsp")?;
+        if root.name == "wps:wsp" && root.first("wps:txbx").is_some() {
+            return None;
+        }
+        let extent = frame.first("wp:extent")?;
+        let num = |k: &str| {
+            extent
+                .get(k)
+                .and_then(|v| v.parse::<f64>().ok())
+                .unwrap_or(0.0)
+        };
+        let (cx, cy) = (num("cx"), num("cy"));
+        let name = frame
+            .first("wp:docPr")
+            .and_then(|d| d.get("name"))
+            .unwrap_or("도형")
+            .to_string();
+        let svg = crate::shapes::to_svg(data, cx, cy, &|id| self.media(id))?;
+        for what in &svg.skipped {
+            self.report
+                .warnings
+                .push(("shape_partial", messages::shape_partial(&self.place, what)));
+        }
+        let png = match crate::render::shapes_to_png(&svg.svg, svg.width_pt, svg.height_pt) {
+            Ok(png) => png,
+            Err(e) => {
+                self.report.warnings.push((
+                    "shape_failed",
+                    messages::shape_failed(&self.place, &format!("{name}: {e}")),
+                ));
+                return None;
+            }
+        };
+        let id = self.add_png(png);
+        let (w, h) = (
+            (svg.width_pt * EMU_PER_PT).round().to_string(),
+            (svg.height_pt * EMU_PER_PT).round().to_string(),
+        );
+        let mut frame = frame.clone();
+        for node in &mut frame.children {
+            let Node::El(e) = node else { continue };
+            match e.name.as_str() {
+                "wp:extent" => *e = Element::new("wp:extent").attr("cx", &w).attr("cy", &h),
+                "a:graphic" => *e = self.pic_graphic(&id, &w, &h, &format!("{name}.png")),
+                _ => {}
+            }
+        }
+        self.report.shapes += 1;
+        Some(Element::new("w:drawing").child(frame))
+    }
+
+    /// 그림 하나를 담은 `a:graphic`.
+    fn pic_graphic(&mut self, rel_id: &str, cx: &str, cy: &str, name: &str) -> Element {
+        self.next_id += 1;
+        let id = (100_000 + self.next_id).to_string();
+        let pic = Element::new("pic:pic")
+            .attr(
+                "xmlns:pic",
+                "http://schemas.openxmlformats.org/drawingml/2006/picture",
+            )
+            .child(
+                Element::new("pic:nvPicPr")
+                    .child(Element::new("pic:cNvPr").attr("id", &id).attr("name", name))
+                    .child(Element::new("pic:cNvPicPr")),
+            )
+            .child(
+                Element::new("pic:blipFill")
+                    .child(Element::new("a:blip").attr("r:embed", rel_id))
+                    .child(Element::new("a:stretch").child(Element::new("a:fillRect"))),
+            )
+            .child(
+                Element::new("pic:spPr")
+                    .child(
+                        Element::new("a:xfrm")
+                            .child(Element::new("a:off").attr("x", "0").attr("y", "0"))
+                            .child(Element::new("a:ext").attr("cx", cx).attr("cy", cy)),
+                    )
+                    .child(
+                        Element::new("a:prstGeom")
+                            .attr("prst", "rect")
+                            .child(Element::new("a:avLst")),
+                    ),
+            );
+        Element::new("a:graphic")
+            .attr(
+                "xmlns:a",
+                "http://schemas.openxmlformats.org/drawingml/2006/main",
+            )
+            .child(
+                Element::new("a:graphicData")
+                    .attr(
+                        "uri",
+                        "http://schemas.openxmlformats.org/drawingml/2006/picture",
+                    )
+                    .child(pic),
+            )
     }
 
     fn image_run(&mut self, rel_id: &str, png: &Png, rpr: Option<&Element>) -> Element {
@@ -456,7 +791,64 @@ impl Normalizer<'_> {
         run.child(Element::new("w:drawing").child(inline))
     }
 
-    /// `w:sym` → `w:t`. Symbol 글꼴만 안다.
+    /// 글꼴이 Symbol · Wingdings 인 런의 글(`a` 가 α, `Ò` 가 ®, U+F061 이 α 로 보인다) → 실제 유니코드 글자.
+    /// Word 밖에서 붙여 넣은 글 · 옛 문서에 흔하다. 그대로 두면 HLT/HWPX 에서는 글꼴이 빠져 `a` · `Ò` 로 남는다.
+    /// 바꾼 뒤 그 글꼴은 런에서 뗀다(바꾼 글자를 다시 기호 글꼴로 그리지 않게).
+    fn symbol_font_text(&mut self, run: &mut Element) {
+        let Some(font) = run
+            .first("w:rPr")
+            .and_then(|p| p.first("w:rFonts"))
+            .and_then(|f| {
+                f.get("w:ascii")
+                    .or_else(|| f.get("w:hAnsi"))
+                    .or_else(|| f.get("w:cs"))
+            })
+            .map(str::to_string)
+        else {
+            return;
+        };
+        let Some(map) = chars::symbol_font_map(&font) else {
+            return;
+        };
+        let mut unmapped = Vec::new();
+        for node in &mut run.children {
+            let Node::El(el) = node else { continue };
+            if el.name != "w:t" {
+                continue;
+            }
+            let text: String = el
+                .text()
+                .chars()
+                .map(|c| {
+                    let code = c as u32;
+                    if !(0x20..=0xFF).contains(&code) && !(0xF020..=0xF0FF).contains(&code) {
+                        return c;
+                    }
+                    map(code).unwrap_or_else(|| {
+                        unmapped.push(code);
+                        c
+                    })
+                })
+                .collect();
+            *el = text_el(&text);
+        }
+        for code in unmapped {
+            self.report.warnings.push((
+                "symbol_unmapped",
+                messages::symbol_unmapped(&self.place, &font, code),
+            ));
+        }
+        if let Some(Node::El(rpr)) = run
+            .children
+            .iter_mut()
+            .find(|n| matches!(n, Node::El(e) if e.name == "w:rPr"))
+        {
+            rpr.children
+                .retain(|n| !matches!(n, Node::El(e) if e.name == "w:rFonts"));
+        }
+    }
+
+    /// `w:sym` → `w:t`. Symbol · Wingdings 글꼴만 안다.
     fn symbols(&mut self, run: &mut Element) {
         for node in &mut run.children {
             let Node::El(el) = node else { continue };
@@ -468,16 +860,12 @@ impl Normalizer<'_> {
                 .get("w:char")
                 .and_then(|c| u32::from_str_radix(c, 16).ok())
                 .unwrap_or(0);
-            let text = if font.eq_ignore_ascii_case("Symbol") {
-                chars::symbol_font(code)
-            } else {
-                None
-            };
+            let text = chars::symbol_font_map(&font).and_then(|map| map(code));
             match text {
                 Some(c) => *el = Element::new("w:t").text_child(&c.to_string()),
                 None => self.report.warnings.push((
                     "symbol_unmapped",
-                    format!("{font} 글꼴 기호 U+{code:04X} 는 옮기지 못했습니다"),
+                    messages::symbol_unmapped(&self.place, &font, code),
                 )),
             }
         }
@@ -542,7 +930,7 @@ impl Normalizer<'_> {
                             Err(e) => {
                                 self.report.warnings.push((
                                     "glyph_failed",
-                                    format!("글자 {cluster:?} 를 그리지 못했습니다: {e}"),
+                                    messages::glyph_failed(&self.place, &cluster, &e),
                                 ));
                                 current.children.push(Node::El(text_el(&cluster)));
                             }
@@ -614,6 +1002,235 @@ fn inline_runs(block: &Element, out: &mut Vec<Node>, nested: &mut bool) {
             _ => inline_runs(child, out, nested),
         }
     }
+}
+
+/// 스타일 id → 그 스타일(과 basedOn 조상)이 정한 글꼴(`w:rFonts` 의 ascii · hAnsi).
+fn style_fonts(styles: &Element) -> HashMap<String, Option<String>> {
+    let mut own: HashMap<String, (Option<String>, Option<String>)> = HashMap::new();
+    for style in styles.elements().filter(|e| e.name == "w:style") {
+        let Some(id) = style.get("w:styleId") else {
+            continue;
+        };
+        let font = style
+            .first("w:rPr")
+            .and_then(|p| p.first("w:rFonts"))
+            .and_then(|f| f.get("w:ascii").or_else(|| f.get("w:hAnsi")))
+            .map(str::to_string);
+        let based = style.prop("w:basedOn", "w:val").map(str::to_string);
+        own.insert(id.to_string(), (font, based));
+    }
+    own.keys()
+        .map(|id| {
+            let mut at = Some(id.clone());
+            let mut font = None;
+            for _ in 0..32 {
+                let Some((f, based)) = at.as_ref().and_then(|a| own.get(a)) else {
+                    break;
+                };
+                if f.is_some() {
+                    font = f.clone();
+                    break;
+                }
+                at = based.clone();
+            }
+            (id.clone(), font)
+        })
+        .collect()
+}
+
+/// 스타일로만 Symbol · Wingdings · MT Extra 글꼴을 받은 런에 그 글꼴을 직접 단다 — 그래야 `symbol_font_text` 가
+/// 글자를 바꾼다. 런에 직접 단 글꼴이 있으면 그것이 이긴다. 글자 스타일이 다른 글꼴을 정하면 문단 스타일보다 앞선다.
+fn apply_style_symbol_fonts(el: &mut Element, fonts: &HashMap<String, Option<String>>) {
+    if !fonts
+        .values()
+        .flatten()
+        .any(|f| chars::symbol_font_map(f).is_some())
+    {
+        return;
+    }
+    fn runs(el: &mut Element, paragraph: Option<&str>, fonts: &HashMap<String, Option<String>>) {
+        for node in &mut el.children {
+            let Node::El(child) = node else { continue };
+            match child.name.as_str() {
+                "w:p" => {
+                    let style = child
+                        .first("w:pPr")
+                        .and_then(|p| p.prop("w:pStyle", "w:val"))
+                        .and_then(|id| fonts.get(id).cloned().flatten());
+                    runs(child, style.as_deref(), fonts);
+                }
+                "w:r" => {
+                    let rpr = child.first("w:rPr");
+                    let direct = rpr
+                        .and_then(|p| p.first("w:rFonts"))
+                        .is_some_and(|f| f.get("w:ascii").is_some() || f.get("w:hAnsi").is_some());
+                    if direct {
+                        continue;
+                    }
+                    let font = rpr
+                        .and_then(|p| p.prop("w:rStyle", "w:val"))
+                        .and_then(|id| fonts.get(id).cloned().flatten())
+                        .or_else(|| paragraph.map(str::to_string));
+                    let Some(font) = font.filter(|f| chars::symbol_font_map(f).is_some()) else {
+                        continue;
+                    };
+                    if child.first("w:rPr").is_none() {
+                        child.children.insert(0, Node::El(Element::new("w:rPr")));
+                    }
+                    if let Some(Node::El(rpr)) = child
+                        .children
+                        .iter_mut()
+                        .find(|n| matches!(n, Node::El(e) if e.name == "w:rPr"))
+                    {
+                        rpr.children
+                            .retain(|n| !matches!(n, Node::El(e) if e.name == "w:rFonts"));
+                        rpr.children.insert(
+                            0,
+                            Node::El(
+                                Element::new("w:rFonts")
+                                    .attr("w:ascii", &font)
+                                    .attr("w:hAnsi", &font),
+                            ),
+                        );
+                    }
+                }
+                _ => runs(child, paragraph, fonts),
+            }
+        }
+    }
+    runs(el, None, fonts);
+}
+
+/// 그림 관계 id → 그 그림이 처음 나오는 자리(가장 가까운 앞의 식별 번호).
+fn image_places(document: &Element) -> HashMap<String, String> {
+    fn walk(el: &Element, last: &mut String, out: &mut HashMap<String, String>) {
+        if el.name == "w:p"
+            && let Some(m) = messages::marker_of(&el.text())
+        {
+            *last = m;
+        }
+        let id = match el.name.as_str() {
+            "a:blip" => el.get("r:embed").or_else(|| el.get("r:link")),
+            "v:imagedata" => el.get("r:id").or_else(|| el.get("o:relid")),
+            _ => None,
+        };
+        if let Some(id) = id {
+            out.entry(id.to_string()).or_insert_with(|| last.clone());
+        }
+        for child in el.elements() {
+            walk(child, last, out);
+        }
+    }
+    let mut out = HashMap::new();
+    walk(document, &mut String::new(), &mut out);
+    out
+}
+
+/// hlt-core 와 같은 방법(image 크레이트, 같은 판 · 같은 기능)으로 그림 크기를 읽을 수 있는가.
+fn readable(bytes: &[u8]) -> bool {
+    image::ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .ok()
+        .and_then(|r| r.into_dimensions().ok())
+        .is_some_and(|(w, h)| w > 0 && h > 0)
+}
+
+fn looks_svg(target: &str, bytes: &[u8]) -> bool {
+    target.to_ascii_lowercase().ends_with(".svg")
+        || String::from_utf8_lossy(&bytes[..bytes.len().min(512)]).contains("<svg")
+}
+
+/// 본문이 그림으로 쓰는 관계 id: `a:blip` 의 r:embed(없으면 r:link), VML 의 r:id(없으면 o:relid).
+/// SVG 원본(`asvg:svgBlip`)은 PNG 대체 그림이 있는 보조라 세지 않는다.
+fn collect_image_refs(el: &Element, out: &mut std::collections::HashSet<String>) {
+    let pick = match el.name.as_str() {
+        "a:blip" => el.get("r:embed").or_else(|| el.get("r:link")),
+        "v:imagedata" => el.get("r:id").or_else(|| el.get("o:relid")),
+        _ => None,
+    };
+    if let Some(v) = pick {
+        out.insert(v.to_string());
+    }
+    for child in el.elements() {
+        collect_image_refs(child, out);
+    }
+}
+
+/// 남은 관계에 없는 SVG 원본(`asvg:svgBlip`)을 뗀다 — PNG 대체 그림이 그대로 쓰인다.
+fn drop_dangling_svg(el: &mut Element, ids: &std::collections::HashSet<String>) {
+    el.children.retain(|n| {
+        !matches!(n, Node::El(e) if e.name.ends_with(":svgBlip")
+            && e.get("r:embed").is_some_and(|id| !ids.contains(id)))
+    });
+    for node in &mut el.children {
+        if let Node::El(child) = node {
+            drop_dangling_svg(child, ids);
+        }
+    }
+}
+
+/// `a:blip` 이 r:link 만 → r:embed, VML 이 o:relid 만 → r:id. 없는 관계는 `dangling` 으로 센다.
+fn fix_image_refs(
+    el: &mut Element,
+    ids: &std::collections::HashSet<String>,
+    dangling: &mut dyn FnMut(&str),
+) {
+    let key = match el.name.as_str() {
+        "a:blip" => Some(("r:embed", "r:link")),
+        "v:imagedata" => Some(("r:id", "o:relid")),
+        _ => None,
+    };
+    if let Some((main, alt)) = key {
+        if el.get(main).is_none()
+            && let Some(v) = el.get(alt).map(str::to_string)
+        {
+            el.attrs.push((main.to_string(), v));
+        }
+        if let Some(v) = el.get(main)
+            && !ids.contains(v)
+        {
+            dangling(v);
+        }
+    }
+    for node in &mut el.children {
+        if let Node::El(child) = node {
+            fix_image_refs(child, ids, dangling);
+        }
+    }
+}
+
+/// 없는 관계를 가리키는 그림을 자리표 관계로.
+fn point_dangling(el: &mut Element, ids: &std::collections::HashSet<String>, to: &str) {
+    let main = match el.name.as_str() {
+        "a:blip" => Some("r:embed"),
+        "v:imagedata" => Some("r:id"),
+        _ => None,
+    };
+    if let Some(main) = main {
+        for (k, v) in &mut el.attrs {
+            if k == main && !ids.contains(v.as_str()) {
+                *v = to.to_string();
+            }
+        }
+    }
+    for node in &mut el.children {
+        if let Node::El(child) = node {
+            point_dangling(child, ids, to);
+        }
+    }
+}
+
+/// 글자 대신 쓰는 Word 요소: 줄 안 나뉘는 하이픈(Ctrl+Shift+-) → `-`, 선택 하이픈 → 지움.
+/// hlt-core · HwpForge 는 이 요소를 읽지 않아 `1‑2` 가 `12` 가 된다.
+fn special_chars(run: &mut Element) {
+    run.children.retain_mut(|node| match node {
+        Node::El(el) if el.name == "w:noBreakHyphen" => {
+            *el = text_el("-");
+            true
+        }
+        Node::El(el) => el.name != "w:softHyphen",
+        Node::Text(_) => true,
+    });
 }
 
 fn text_el(t: &str) -> Element {
