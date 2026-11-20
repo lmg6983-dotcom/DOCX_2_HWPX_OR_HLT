@@ -99,19 +99,23 @@ jobs:
       - name: Installer
         shell: pwsh
         run: |
-          $iscc = Get-Command iscc -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
-          if (-not $iscc) {
-            $iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe") |
-              Where-Object { Test-Path $_ } | Select-Object -First 1
-          }
+          # PATH 의 iscc 는 Chocolatey 바로가기(…\Chocolatey\bin)라 Languages 폴더가 없다 — 실제 설치 폴더의 ISCC.exe 를 쓴다.
+          $find = { @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe") |
+            Where-Object { Test-Path $_ } | Select-Object -First 1 }
+          $iscc = & $find
           if (-not $iscc) {
             choco install innosetup -y --no-progress | Out-Null
-            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+            $iscc = & $find
           }
+          if (-not $iscc) { throw "Inno Setup 6(ISCC.exe)을 찾지 못했다" }
+          "ISCC: $iscc"
           $lang = Join-Path (Split-Path $iscc) "Languages\Korean.isl"
           if (-not (Test-Path $lang)) {
-            Invoke-WebRequest -UseBasicParsing -OutFile $lang `
-              -Uri "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Korean.isl"
+            $base = "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages"
+            foreach ($uri in "$base/Korean.isl", "$base/Unofficial/Korean.isl") {
+              try { Invoke-WebRequest -UseBasicParsing -OutFile $lang -Uri $uri; break } catch { "못 받음: $uri" }
+            }
+            if (-not (Test-Path $lang)) { throw "Korean.isl 을 받지 못했다" }
           }
           $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.+)"' | Select-Object -First 1).Matches.Groups[1].Value
           & $iscc /Qp "/DAppVersion=$version" "/DBinDir=..\exe" installer\docx2hwpx-hlt.iss
