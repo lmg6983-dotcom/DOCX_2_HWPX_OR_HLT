@@ -1,7 +1,10 @@
 [package]
 name = "docx2hwpx-hlt"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
+description = "Word 특허 명세서(.docx)를 NK-Editor(.hlt) · MOIP-Editor(.hwpx) 파일로 바꾸는 도구"
+repository = "https://github.com/lmg6983-dotcom/DOCX_2_HWPX_OR_HLT"
+build = "build.rs"
 
 [[bin]]
 name = "docx2hwpx-hlt"
@@ -41,6 +44,10 @@ quick-xml = "0.41"
 # HLT 그림 다듬기
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 zip = { version = "3", default-features = false, features = ["deflate"] }
+
+[build-dependencies]
+# 윈도 exe 아이콘 · 버전 정보(build.rs)
+winresource = "0.1"
 
 [profile.dev.package."*"]
 opt-level = 2

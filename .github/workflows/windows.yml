@@ -1,5 +1,6 @@
-# 윈도 실행 파일 빌드: 명령줄(docx2hwpx-hlt.exe) + 화면 앱(docx2hwpx-hlt-gui.exe).
-# 결과는 Actions 실행 화면의 Artifacts 에서 zip 으로 받는다.
+# 윈도 실행 파일 빌드: 명령줄(docx2hwpx-hlt.exe) + 화면 앱(docx2hwpx-hlt-gui.exe)
+# + 설치 파일(docx2hwpx-hlt-setup-x64.exe, Inno Setup).
+# 결과는 Actions 실행 화면의 Artifacts 에서 받는다.
 # v* 태그를 올리거나, 수동 실행(workflow_dispatch)에서 release 에 v0.1.0 같은 이름을 넣으면
 # 같은 zip 을 붙인 GitHub 릴리스도 만든다(수동 실행이면 그 커밋에 태그도 만든다).
 name: windows
@@ -46,10 +47,35 @@ jobs:
           Compress-Archive -CompressionLevel Optimal -Path cli/* -DestinationPath docx2hwpx-hlt-cli-windows-x64.zip
           Get-ChildItem target/release/*.exe, *.zip | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
 
+      # 설치 파일: 러너에 Inno Setup 6 이 없으면 choco 로 깐다. 한국어 메시지 파일이 없으면 공식 저장소에서 받는다.
+      - name: Installer
+        shell: pwsh
+        run: |
+          $iscc = Get-Command iscc -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+          if (-not $iscc) {
+            $iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe") |
+              Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress | Out-Null
+            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          }
+          $lang = Join-Path (Split-Path $iscc) "Languages\Korean.isl"
+          if (-not (Test-Path $lang)) {
+            Invoke-WebRequest -UseBasicParsing -OutFile $lang `
+              -Uri "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Korean.isl"
+          }
+          $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.+)"' | Select-Object -First 1).Matches.Groups[1].Value
+          & $iscc /Qp "/DAppVersion=$version" "/DBinDir=..\target\release" installer\docx2hwpx-hlt.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item dist\docx2hwpx-hlt-setup-x64.exe .
+          "docx2hwpx-hlt-setup-x64.exe  {0:N1} MB" -f ((Get-Item docx2hwpx-hlt-setup-x64.exe).Length / 1MB)
+
       - uses: actions/upload-artifact@v4
         with:
           name: docx2hwpx-hlt-windows-x64
           path: |
+            docx2hwpx-hlt-setup-x64.exe
             docx2hwpx-hlt-windows-x64.zip
             docx2hwpx-hlt-cli-windows-x64.zip
 
@@ -60,7 +86,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release }}
         run: >
-          gh release create "$env:TAG" docx2hwpx-hlt-windows-x64.zip docx2hwpx-hlt-cli-windows-x64.zip
+          gh release create "$env:TAG" docx2hwpx-hlt-setup-x64.exe docx2hwpx-hlt-windows-x64.zip docx2hwpx-hlt-cli-windows-x64.zip
           --repo "${{ github.repository }}"
           --target "${{ github.sha }}"
           --title "DOCX2HWPX-HLT $env:TAG"
