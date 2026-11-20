@@ -1113,15 +1113,17 @@ impl App {
             (_, 1) => ("변환하기".to_string(), true),
             (_, n) => (format!("{n}개 변환하기"), true),
         };
-        let button = egui::Button::new(RichText::new(label).font(bold(16.0)).color(if enabled {
+        // 양옆의 grow 가 남는 폭을 나눠 가져 글자가 가운데에 온다.
+        let text = RichText::new(label).font(bold(16.0)).color(if enabled {
             p.accent_ink
         } else {
             p.muted
-        }))
-        .fill(if enabled { p.accent } else { p.line })
-        .stroke(Stroke::NONE)
-        .corner_radius(10)
-        .min_size(egui::vec2(ui.available_width(), 46.0));
+        });
+        let button = egui::Button::new((egui::Atom::grow(), text, egui::Atom::grow()))
+            .fill(if enabled { p.accent } else { p.line })
+            .stroke(Stroke::NONE)
+            .corner_radius(10)
+            .min_size(egui::vec2(ui.available_width(), 46.0));
         let response = ui.add_enabled(enabled, button);
         if enabled {
             response.clone().on_hover_text("Enter");
