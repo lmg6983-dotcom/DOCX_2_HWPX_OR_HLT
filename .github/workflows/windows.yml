@@ -1,5 +1,6 @@
-# 윈도 실행 파일 빌드: 명령줄(docx2hwpx-hlt.exe) + 화면 앱(docx2hwpx-hlt-gui.exe).
-# 결과는 Actions 실행 화면의 Artifacts 에서 zip 으로 받는다.
+# 윈도 실행 파일 빌드: CLI(docx2hwpx-hlt.exe) + 화면 앱(docx2hwpx-hlt-gui.exe)
+# + 설치 파일(docx2hwpx-hlt-setup-x64.exe, Inno Setup — installer/docx2hwpx-hlt.iss).
+# 결과는 Actions 실행 화면의 Artifacts 에서 받는다.
 # v* 태그를 올리거나, 수동 실행(workflow_dispatch)에서 release 에 v0.1.0 같은 이름을 넣으면
 # 같은 zip 을 붙인 GitHub 릴리스도 만든다(수동 실행이면 그 커밋에 태그도 만든다).
 # 릴리스 노트는 .github/release-notes.md 뒤에 PR 목록(분류는 .github/release.yml)을 붙인다.
@@ -93,10 +94,40 @@ jobs:
           Compress-Archive -CompressionLevel Optimal -Path cli/* -DestinationPath docx2hwpx-hlt-cli-windows-x64.zip
           Get-ChildItem exe/*.exe, *.zip | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
 
+      # 설치 파일: (서명했으면 서명된) exe/ 를 담는다. 러너에 Inno Setup 6 이 없으면 choco 로 깔고,
+      # 한국어 메시지 파일이 없으면 Inno Setup 공식 저장소에서 받는다.
+      - name: Installer
+        shell: pwsh
+        run: |
+          # PATH 의 iscc 는 Chocolatey 바로가기(…\Chocolatey\bin)라 Languages 폴더가 없다 — 실제 설치 폴더의 ISCC.exe 를 쓴다.
+          $find = { @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe") |
+            Where-Object { Test-Path $_ } | Select-Object -First 1 }
+          $iscc = & $find
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress | Out-Null
+            $iscc = & $find
+          }
+          if (-not $iscc) { throw "Inno Setup 6(ISCC.exe)을 찾지 못했다" }
+          "ISCC: $iscc"
+          $lang = Join-Path (Split-Path $iscc) "Languages\Korean.isl"
+          if (-not (Test-Path $lang)) {
+            $base = "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages"
+            foreach ($uri in "$base/Korean.isl", "$base/Unofficial/Korean.isl") {
+              try { Invoke-WebRequest -UseBasicParsing -OutFile $lang -Uri $uri; break } catch { "못 받음: $uri" }
+            }
+            if (-not (Test-Path $lang)) { throw "Korean.isl 을 받지 못했다" }
+          }
+          $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.+)"' | Select-Object -First 1).Matches.Groups[1].Value
+          & $iscc /Qp "/DAppVersion=$version" "/DBinDir=..\exe" installer\docx2hwpx-hlt.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item dist\docx2hwpx-hlt-setup-x64.exe .
+          "docx2hwpx-hlt-setup-x64.exe  {0:N1} MB" -f ((Get-Item docx2hwpx-hlt-setup-x64.exe).Length / 1MB)
+
       - uses: actions/upload-artifact@v4
         with:
           name: docx2hwpx-hlt-windows-x64
           path: |
+            docx2hwpx-hlt-setup-x64.exe
             docx2hwpx-hlt-windows-x64.zip
             docx2hwpx-hlt-cli-windows-x64.zip
 
@@ -107,7 +138,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release }}
         run: >
-          gh release create "$env:TAG" docx2hwpx-hlt-windows-x64.zip docx2hwpx-hlt-cli-windows-x64.zip
+          gh release create "$env:TAG" docx2hwpx-hlt-setup-x64.exe docx2hwpx-hlt-windows-x64.zip docx2hwpx-hlt-cli-windows-x64.zip
           --repo "${{ github.repository }}"
           --target "${{ github.sha }}"
           --title "DOCX_2_HWPX_OR_HLT $env:TAG"

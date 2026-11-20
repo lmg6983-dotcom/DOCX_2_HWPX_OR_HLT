@@ -91,7 +91,7 @@ target/release/docx2hwpx-hlt 명세서.docx --to hlt --json
 |---|---|
 | `src/lib.rs` | 변환 핵심 `convert`(바이트 → 바이트 + 보고 · 진행 알림) · `write_atomic` |
 | `src/main.rs` | 명령줄: 인자 · JSON · 종료 코드 |
-| `src/bin/gui.rs` | 화면 앱(egui · `gui` 기능) |
+| `src/bin/gui.rs` | 화면 앱(egui · `gui` 기능) — 일괄 변환 · 한 창으로 모으기(127.0.0.1:47631) |
 | `src/normalize.rs` | DOCX 고쳐 쓰기(수식 → 그림, WMF/EMF, 변경 추적, 칸 합치기, HLT 글자 규칙 적용) |
 | `src/chars.rs` | NK-Editor 글자 규칙(CP949) |
 | `src/omml.rs` | OMML → Typst 수식 |
@@ -101,6 +101,8 @@ target/release/docx2hwpx-hlt 명세서.docx --to hlt --json
 | `src/messages.rs` | 사용자에게 보이는 경고 · 실패 문구(어디서 — 무엇이 — 어떻게, 기술 정보는 괄호) |
 | `src/hwpx.rs` | 고쳐 쓴 DOCX → HWPX(HwpForge) |
 | `tests/make_fixture.py` | 시험용 DOCX 생성기 → `tests/fixtures/sample.docx` |
+| `build.rs` · `assets/` | 윈도 exe 아이콘 · 버전 정보, 아이콘/배너 생성 스크립트 |
+| `installer/docx2hwpx-hlt.iss` | Inno Setup 설치 파일(시작 메뉴 · 바탕화면 · .docx 우클릭 · 보내기) |
 
 ```bash
 cargo fmt && cargo clippy --all-targets && cargo test

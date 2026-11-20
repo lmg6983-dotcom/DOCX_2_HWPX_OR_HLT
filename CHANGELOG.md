@@ -7,9 +7,24 @@
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-11-20
+
+> **설치 파일**과 **일괄 변환** 화면 앱을 낸 판입니다. 변환 결과는 0.1.5와 같습니다.
+
+### ✨ 추가
+
+- **윈도 설치 파일**(Inno Setup) — 관리자 권한 없이 설치, 시작 메뉴 · (선택) 바탕화면 바로가기,
+  탐색기 `.docx` 우클릭 「HLT · HWPX 로 변환」, 「보내기」 메뉴, 제거 시 정리. 릴리스에 `docx2hwpx-hlt-setup-x64.exe` 로 붙습니다.
+- 화면 앱 **일괄 변환** — 여러 파일 · 폴더를 놓고 한 번에 변환, 파일마다 상태 · 보고, 「멈추기」.
+- 화면 앱 **저장 위치**(원본 폴더 / 다른 폴더)와 덮어쓰기 선택. 같은 이름이 있으면 `이름 (2).hlt` 로 만듭니다.
+- 우클릭 · 보내기로 여러 파일을 열면 이미 열린 창 하나로 모읍니다.
+- 앱 · exe 아이콘과 버전 정보, 화면 앱에 만든이 표시.
+
 ### 🔧 바뀜
 
-- README · 릴리스 노트를 다시 꾸미고, 변경 기록 · 기여 안내 · 이슈/PR 양식을 더했습니다.
+- 화면 앱을 단계 카드 화면으로 새로 짰습니다. 밝게/어둡게 테마를 따르고, 맑은 고딕 · 굵은 글씨를 씁니다.
+- 화면 앱이 저장 창 대신 고른 폴더에 바로 저장합니다.
+- README를 배너 · 스크린샷 · 자주 묻는 질문 · 영어 요약으로 다시 꾸미고, 변경 기록 · 기여 안내 · 이슈/PR 양식을 더했습니다.
 
 ## [0.1.5] — 2026-11-05
 
@@ -95,7 +110,8 @@
 - `--json` 결과 · 고정 실패/경고 코드 · `--overwrite` · [AGENTS.md](AGENTS.md).
 - `v*` 태그로 윈도 빌드와 GitHub 릴리스를 자동으로 만드는 워크플로.
 
-[Unreleased]: https://github.com/lmg6983-dotcom/DOCX_2_HWPX_OR_HLT/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/lmg6983-dotcom/DOCX_2_HWPX_OR_HLT/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/lmg6983-dotcom/DOCX_2_HWPX_OR_HLT/compare/v0.1.5...v0.2.0
 [0.1.5]: https://github.com/lmg6983-dotcom/DOCX_2_HWPX_OR_HLT/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/lmg6983-dotcom/DOCX_2_HWPX_OR_HLT/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/lmg6983-dotcom/DOCX_2_HWPX_OR_HLT/compare/v0.1.2...v0.1.3
