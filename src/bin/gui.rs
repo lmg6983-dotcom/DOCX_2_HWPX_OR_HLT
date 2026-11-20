@@ -29,19 +29,33 @@ const AUTHOR: &str = "lmg6983@gmail.com";
 
 // ───────────────────────────── 색 ─────────────────────────────
 
-/// 밝은 · 어두운 테마 색. 본문 대비 4.5:1 이상을 맞췄다.
+/// 밝은 · 어두운 테마 색. 토스(Toss) 앱처럼 회색 바탕 위 테두리 없는 흰 카드, 파랑 하나로 강조한다.
+/// 본문 대비 4.5:1 이상을 맞췄다(큰 단추 글자는 3:1).
 #[derive(Clone, Copy)]
 struct Pal {
+    /// 창 바탕(grey100)
     bg: Color32,
+    /// 카드
     card: Color32,
+    /// 카드 안 옅은 바탕(grey50) — 펼친 줄 · 놓는 곳
     sunken: Color32,
+    /// 마우스를 올린 줄 · 회색 단추 바탕(grey100)
+    hover: Color32,
     ink: Color32,
+    /// 회색 단추 글자 · 둘째 글(grey700)
+    ink2: Color32,
     muted: Color32,
     line: Color32,
+    /// 꺼진 체크 원(grey300)
+    outline: Color32,
     accent: Color32,
     accent_ink: Color32,
+    /// 고른 것 · 파랑 옅은 바탕
     accent_soft: Color32,
+    /// accent_soft 위 글자
+    accent_deep: Color32,
     ok: Color32,
+    ok_soft: Color32,
     warn: Color32,
     warn_soft: Color32,
     err: Color32,
@@ -49,37 +63,47 @@ struct Pal {
 }
 
 const LIGHT: Pal = Pal {
-    bg: Color32::from_rgb(0xf3, 0xf5, 0xf9),
+    bg: Color32::from_rgb(0xf2, 0xf4, 0xf6),
     card: Color32::WHITE,
-    sunken: Color32::from_rgb(0xf8, 0xfa, 0xfc),
-    ink: Color32::from_rgb(0x0f, 0x17, 0x2a),
-    muted: Color32::from_rgb(0x52, 0x5c, 0x6c),
-    line: Color32::from_rgb(0xdb, 0xe1, 0xea),
-    accent: Color32::from_rgb(0x25, 0x5f, 0xd6),
+    sunken: Color32::from_rgb(0xf9, 0xfa, 0xfb),
+    hover: Color32::from_rgb(0xf2, 0xf4, 0xf6),
+    ink: Color32::from_rgb(0x19, 0x1f, 0x28),
+    ink2: Color32::from_rgb(0x4e, 0x59, 0x68),
+    muted: Color32::from_rgb(0x6b, 0x76, 0x84),
+    line: Color32::from_rgb(0xe5, 0xe8, 0xeb),
+    outline: Color32::from_rgb(0xd1, 0xd6, 0xdb),
+    accent: Color32::from_rgb(0x31, 0x82, 0xf6),
     accent_ink: Color32::WHITE,
-    accent_soft: Color32::from_rgb(0xe8, 0xf0, 0xfe),
-    ok: Color32::from_rgb(0x15, 0x80, 0x3d),
-    warn: Color32::from_rgb(0x9a, 0x58, 0x00),
-    warn_soft: Color32::from_rgb(0xfe, 0xf6, 0xe4),
-    err: Color32::from_rgb(0xc0, 0x26, 0x1b),
-    err_soft: Color32::from_rgb(0xfd, 0xec, 0xea),
+    accent_soft: Color32::from_rgb(0xe8, 0xf3, 0xff),
+    accent_deep: Color32::from_rgb(0x1b, 0x64, 0xda),
+    ok: Color32::from_rgb(0x0b, 0x7a, 0x55),
+    ok_soft: Color32::from_rgb(0xe5, 0xf8, 0xef),
+    warn: Color32::from_rgb(0xa6, 0x53, 0x00),
+    warn_soft: Color32::from_rgb(0xff, 0xf3, 0xe0),
+    err: Color32::from_rgb(0xd2, 0x20, 0x30),
+    err_soft: Color32::from_rgb(0xff, 0xee, 0xee),
 };
 
 const DARK: Pal = Pal {
-    bg: Color32::from_rgb(0x0f, 0x13, 0x1a),
-    card: Color32::from_rgb(0x18, 0x1e, 0x28),
-    sunken: Color32::from_rgb(0x13, 0x18, 0x21),
-    ink: Color32::from_rgb(0xe6, 0xea, 0xf0),
-    muted: Color32::from_rgb(0x9a, 0xa4, 0xb2),
-    line: Color32::from_rgb(0x2c, 0x35, 0x44),
-    accent: Color32::from_rgb(0x5b, 0x8d, 0xf6),
-    accent_ink: Color32::from_rgb(0x0b, 0x12, 0x20),
-    accent_soft: Color32::from_rgb(0x1a, 0x2a, 0x4a),
-    ok: Color32::from_rgb(0x4a, 0xd6, 0x80),
-    warn: Color32::from_rgb(0xf2, 0xb3, 0x4a),
-    warn_soft: Color32::from_rgb(0x33, 0x29, 0x14),
-    err: Color32::from_rgb(0xf8, 0x71, 0x6a),
-    err_soft: Color32::from_rgb(0x3a, 0x1a, 0x1a),
+    bg: Color32::from_rgb(0x17, 0x17, 0x1c),
+    card: Color32::from_rgb(0x20, 0x20, 0x27),
+    sunken: Color32::from_rgb(0x26, 0x26, 0x2e),
+    hover: Color32::from_rgb(0x2c, 0x2c, 0x35),
+    ink: Color32::from_rgb(0xf2, 0xf2, 0xf4),
+    ink2: Color32::from_rgb(0xc3, 0xc3, 0xc6),
+    muted: Color32::from_rgb(0x9e, 0x9e, 0xa4),
+    line: Color32::from_rgb(0x34, 0x34, 0x3e),
+    outline: Color32::from_rgb(0x4d, 0x4d, 0x59),
+    accent: Color32::from_rgb(0x31, 0x82, 0xf6),
+    accent_ink: Color32::WHITE,
+    accent_soft: Color32::from_rgb(0x1f, 0x30, 0x4d),
+    accent_deep: Color32::from_rgb(0x9d, 0xc2, 0xff),
+    ok: Color32::from_rgb(0x3f, 0xd5, 0x99),
+    ok_soft: Color32::from_rgb(0x18, 0x3a, 0x2e),
+    warn: Color32::from_rgb(0xff, 0xb3, 0x4d),
+    warn_soft: Color32::from_rgb(0x3d, 0x2e, 0x14),
+    err: Color32::from_rgb(0xff, 0x8a, 0x93),
+    err_soft: Color32::from_rgb(0x44, 0x21, 0x2a),
 };
 
 fn pal(ui: &Ui) -> Pal {
@@ -105,7 +129,7 @@ fn main() -> eframe::Result {
 
     let icon = image::load_from_memory(ICON_PNG).map(|i| i.to_rgba8()).ok();
     let mut viewport = egui::ViewportBuilder::default()
-        .with_title(format!("{APP_TITLE} — DOCX → HLT · HWPX"))
+        .with_title(format!("{APP_TITLE} (DOCX를 HLT, HWPX로)"))
         .with_inner_size([580.0, 720.0])
         .with_min_inner_size([460.0, 560.0])
         .with_drag_and_drop(true);
@@ -217,13 +241,24 @@ fn style(ctx: &egui::Context) {
         };
         v.panel_fill = p.bg;
         v.window_fill = p.card;
+        v.window_stroke = Stroke::NONE;
+        v.window_corner_radius = CornerRadius::same(16);
+        v.window_shadow = egui::Shadow {
+            offset: [0, 4],
+            blur: 16,
+            spread: 0,
+            color: Color32::from_black_alpha(if p.card == Color32::WHITE { 28 } else { 90 }),
+        };
+        v.popup_shadow = v.window_shadow;
         v.extreme_bg_color = p.sunken;
         v.faint_bg_color = p.sunken;
         v.hyperlink_color = p.accent;
         v.override_text_color = Some(p.ink);
-        v.selection.bg_fill = p.accent;
-        v.selection.stroke = Stroke::new(1.0, p.accent_ink);
-        let r = CornerRadius::same(8);
+        v.selection.bg_fill = p.accent_soft;
+        v.selection.stroke = Stroke::new(2.0, p.accent_deep);
+        v.text_cursor.stroke = Stroke::new(2.0, p.accent);
+        // 화면의 단추 · 칸은 모두 손으로 그린다(button · choice). 여기는 그 밖의 기본값.
+        let r = CornerRadius::same(10);
         for w in [
             &mut v.widgets.noninteractive,
             &mut v.widgets.inactive,
@@ -232,26 +267,32 @@ fn style(ctx: &egui::Context) {
             &mut v.widgets.open,
         ] {
             w.corner_radius = r;
+            w.expansion = 0.0;
         }
         v.widgets.noninteractive.bg_stroke = Stroke::new(1.0, p.line);
-        v.widgets.inactive.bg_fill = p.sunken;
-        v.widgets.inactive.weak_bg_fill = p.sunken;
-        v.widgets.inactive.bg_stroke = Stroke::new(1.0, p.line);
-        v.widgets.hovered.weak_bg_fill = p.accent_soft;
-        v.widgets.hovered.bg_fill = p.accent_soft;
-        v.widgets.hovered.bg_stroke = Stroke::new(1.0, p.accent);
-        v.widgets.hovered.fg_stroke = Stroke::new(1.5, p.ink);
-        v.widgets.active.bg_stroke = Stroke::new(1.0, p.accent);
+        v.widgets.noninteractive.fg_stroke = Stroke::new(1.0, p.muted);
+        v.widgets.inactive.bg_fill = p.card;
+        v.widgets.inactive.weak_bg_fill = p.card;
+        v.widgets.inactive.bg_stroke = Stroke::NONE;
+        v.widgets.inactive.fg_stroke = Stroke::new(1.0, p.ink2);
+        v.widgets.hovered.weak_bg_fill = p.hover;
+        v.widgets.hovered.bg_fill = p.hover;
+        v.widgets.hovered.bg_stroke = Stroke::NONE;
+        v.widgets.hovered.fg_stroke = Stroke::new(1.0, p.ink);
+        v.widgets.active.weak_bg_fill = p.accent_soft;
+        v.widgets.active.bg_fill = p.accent_soft;
+        v.widgets.active.bg_stroke = Stroke::NONE;
+        v.widgets.active.fg_stroke = Stroke::new(1.0, p.accent_deep);
         ctx.set_visuals_of(theme, v);
     }
     ctx.all_styles_mut(|s| {
         s.spacing.item_spacing = egui::vec2(8.0, 8.0);
-        s.spacing.button_padding = egui::vec2(12.0, 6.0);
-        s.spacing.interact_size.y = 26.0;
+        s.spacing.button_padding = egui::vec2(16.0, 8.0);
+        s.spacing.interact_size.y = 32.0;
+        s.spacing.scroll = egui::style::ScrollStyle::floating();
         s.text_styles
-            .insert(egui::TextStyle::Body, FontId::proportional(14.0));
-        s.text_styles
-            .insert(egui::TextStyle::Button, FontId::proportional(14.0));
+            .insert(egui::TextStyle::Body, FontId::proportional(15.0));
+        s.text_styles.insert(egui::TextStyle::Button, bold(13.5));
         s.text_styles
             .insert(egui::TextStyle::Small, FontId::proportional(12.0));
     });
@@ -444,7 +485,7 @@ impl App {
         self.notice = match rejected.len() {
             0 => None,
             1 => Some(format!(
-                "「{}」은(는) Word 문서(.docx)가 아니어서 넣지 않았습니다.",
+                "{} 파일은 Word 문서(.docx)가 아니어서 넣지 않았습니다.",
                 rejected[0]
             )),
             n => Some(format!(
@@ -729,14 +770,26 @@ impl eframe::App for App {
         self.shortcuts(&ctx);
         let p = pal(ui);
 
+        // 위: 바탕과 같은 색, 나눔선 없이 큰 제목만
+        egui::Panel::top("header")
+            .show_separator_line(false)
+            .frame(Frame::new().fill(p.bg).inner_margin(Margin {
+                left: 24,
+                right: 24,
+                top: 20,
+                bottom: 4,
+            }))
+            .show(ui, |ui| self.header(ui, p));
+
         // 아래: 상태 줄
         egui::Panel::bottom("footer")
-            .frame(
-                Frame::new()
-                    .fill(p.card)
-                    .stroke(Stroke::new(1.0, p.line))
-                    .inner_margin(Margin::symmetric(20, 8)),
-            )
+            .show_separator_line(false)
+            .frame(Frame::new().fill(p.bg).inner_margin(Margin {
+                left: 24,
+                right: 24,
+                top: 0,
+                bottom: 12,
+            }))
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     // 오른쪽부터: 버전 · 만든이(누르면 메일) — 좁으면 왼쪽 안내가 말줄임된다.
@@ -747,7 +800,7 @@ impl eframe::App for App {
                                 .size(12.0)
                                 .color(p.muted),
                         );
-                        ui.label(RichText::new("·").size(12.0).color(p.muted));
+                        ui.add_space(4.0);
                         ui.hyperlink_to(
                             RichText::new(AUTHOR).size(12.0),
                             format!("mailto:{AUTHOR}"),
@@ -759,7 +812,7 @@ impl eframe::App for App {
                             ui.add(
                                 egui::Label::new(
                                     RichText::new(
-                                        "만든 파일은 NK-Editor · MOIP-Editor 에서 확인한 뒤 제출하세요",
+                                        "만든 파일은 NK-Editor, MOIP-Editor 에서 확인한 뒤 제출하세요",
                                     )
                                     .size(12.0)
                                     .color(p.muted),
@@ -773,11 +826,12 @@ impl eframe::App for App {
 
         // 아래: 변환 단추 · 게이지 — 목록이 길어도 늘 보인다.
         egui::Panel::bottom("action")
+            .show_separator_line(false)
             .frame(Frame::new().fill(p.bg).inner_margin(Margin {
-                left: 20,
-                right: 20,
-                top: 10,
-                bottom: 14,
+                left: 24,
+                right: 24,
+                top: 12,
+                bottom: 12,
             }))
             .show(ui, |ui| self.action_bar(ui, &ctx, p));
 
@@ -789,14 +843,13 @@ impl eframe::App for App {
                     .show(ui, |ui| {
                         Frame::new()
                             .inner_margin(Margin {
-                                left: 20,
-                                right: 20,
-                                top: 18,
+                                left: 24,
+                                right: 24,
+                                top: 12,
                                 bottom: 8,
                             })
                             .show(ui, |ui| {
                                 ui.spacing_mut().item_spacing.y = 12.0;
-                                self.header(ui, p);
                                 self.files_card(ui, p);
                                 self.format_card(ui, p);
                                 self.output_card(ui, p);
@@ -814,17 +867,19 @@ impl eframe::App for App {
 impl App {
     fn header(&self, ui: &mut Ui, p: Pal) {
         ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = 12.0;
             if let Some(logo) = &self.logo {
-                ui.add(egui::Image::new((logo.id(), Vec2::splat(44.0))));
-                ui.add_space(4.0);
+                ui.add(egui::Image::new((logo.id(), Vec2::splat(40.0))));
             }
             ui.vertical(|ui| {
                 ui.spacing_mut().item_spacing.y = 2.0;
-                ui.label(RichText::new(APP_TITLE).font(bold(21.0)).color(p.ink));
+                ui.label(RichText::new(APP_TITLE).font(bold(22.0)).color(p.ink));
                 ui.label(
-                    RichText::new("Word 명세서(.docx) → NK-Editor(.hlt) · MOIP-Editor(.hwpx)")
-                        .size(13.0)
-                        .color(p.muted),
+                    RichText::new(
+                        "Word 명세서를 NK-Editor(.hlt), MOIP-Editor(.hwpx) 파일로 바꿉니다",
+                    )
+                    .size(13.0)
+                    .color(p.muted),
                 );
             });
         });
@@ -836,26 +891,17 @@ impl App {
         let title = if count == 0 {
             "변환할 파일".to_string()
         } else {
-            format!("변환할 파일 · {count}개")
+            format!("변환할 파일 {count}개")
         };
         let mut clear = false;
         card(
             ui,
             p,
-            1,
             &title,
             |ui| {
                 if count > 0 && !working {
                     ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                        if ui
-                            .add(
-                                egui::Button::new(
-                                    RichText::new("목록 비우기").size(12.5).color(p.muted),
-                                )
-                                .frame(false),
-                            )
-                            .clicked()
-                        {
+                        if button(ui, p, Btn::Text, "목록 비우기", true).clicked() {
                             clear = true;
                         }
                     });
@@ -863,26 +909,30 @@ impl App {
             },
             |ui| {
                 if self.jobs.is_empty() {
-                    if drop_zone(ui, p, 148.0, working, true).clicked() {
+                    if drop_zone(ui, p, 168.0, working, true).clicked() {
                         self.browse();
                     }
                 } else {
                     let mut remove = None;
                     let mut reveal_path = None;
-                    for (i, job) in self.jobs.iter_mut().enumerate() {
-                        match job_row(ui, p, job, working, self.batch.as_ref()) {
-                            RowAction::Remove => remove = Some(i),
-                            RowAction::Reveal(path) => reveal_path = Some(path),
-                            RowAction::None => {}
+                    // 토스 목록처럼 테두리 · 나눔선 없이 줄만 늘어놓는다.
+                    ui.scope(|ui| {
+                        ui.spacing_mut().item_spacing.y = 2.0;
+                        for (i, job) in self.jobs.iter_mut().enumerate() {
+                            match job_row(ui, p, job, working, self.batch.as_ref()) {
+                                RowAction::Remove => remove = Some(i),
+                                RowAction::Reveal(path) => reveal_path = Some(path),
+                                RowAction::None => {}
+                            }
                         }
-                    }
+                    });
                     if let Some(i) = remove {
                         self.jobs.remove(i);
                     }
                     if let Some(path) = reveal_path {
                         reveal(&path);
                     }
-                    if drop_zone(ui, p, 46.0, working, false).clicked() {
+                    if drop_zone(ui, p, 52.0, working, false).clicked() {
                         self.browse();
                     }
                 }
@@ -904,7 +954,6 @@ impl App {
         card(
             ui,
             p,
-            2,
             "만들 형식",
             |_| {},
             |ui| {
@@ -913,7 +962,7 @@ impl App {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = gap;
                     for (hlt, name, editor) in [
-                        (true, "HLT", "NK-Editor · 통합명세서작성기"),
+                        (true, "HLT", "NK-Editor (통합명세서작성기)"),
                         (false, "HWPX", "MOIP-Editor"),
                     ] {
                         if format_tile(ui, p, w, name, editor, self.hlt == hlt, !working).clicked()
@@ -923,11 +972,12 @@ impl App {
                     }
                 });
                 let hint = if self.hlt {
-                    "국내 출원 서식. CP949 밖 글자는 첨자 서식 · 비슷한 글자 · 글자 그림으로 바꿉니다. (PCT 국내진입 서식은 CLI)"
+                    "국내 출원 서식입니다. CP949 밖 글자는 첨자 서식, 비슷한 글자, 글자 그림으로 바꿉니다. PCT 국내진입 서식은 명령줄(CLI)에서 만들 수 있습니다."
                 } else {
-                    "지식재산처 명세서 서식(A4 · 바탕체 12pt · 줄 간격 280%)에 맞춥니다."
+                    "지식재산처 명세서 서식(A4, 바탕체 12pt, 줄 간격 280%)에 맞춥니다."
                 };
-                ui.label(RichText::new(hint).size(12.5).color(p.muted));
+                ui.add_space(2.0);
+                ui.label(RichText::new(hint).size(13.0).color(p.muted));
             },
         );
         if let Some(hlt) = pick
@@ -944,17 +994,17 @@ impl App {
         card(
             ui,
             p,
-            3,
             "저장 위치",
             |_| {},
             |ui| {
                 ui.add_enabled_ui(!working, |ui| {
-                let mut same = self.out_dir.is_none();
-                if ui.radio_value(&mut same, true, "원본 파일과 같은 폴더").clicked() {
+                ui.spacing_mut().item_spacing.y = 0.0;
+                let same = self.out_dir.is_none();
+                if radio(ui, p, same, "원본 파일과 같은 폴더").clicked() {
                     self.out_dir = None;
                 }
                 ui.horizontal(|ui| {
-                    if ui.radio_value(&mut same, false, "다른 폴더").clicked() && self.out_dir.is_none() {
+                    if radio(ui, p, !same, "다른 폴더").clicked() && self.out_dir.is_none() {
                         browse = true;
                     }
                     if let Some(dir) = &self.out_dir {
@@ -964,20 +1014,23 @@ impl App {
                         );
                     }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if ui.button("폴더 고르기…").clicked() {
+                        if button(ui, p, Btn::Weak, "폴더 고르기", !working).clicked() {
                             browse = true;
                         }
                     });
                 });
-                ui.add_space(2.0);
-                ui.checkbox(&mut self.overwrite, "같은 이름의 파일이 있으면 덮어쓰기");
+                ui.add_space(4.0);
+                checkbox(ui, p, &mut self.overwrite, "같은 이름의 파일이 있으면 덮어쓰기");
                 let ext = self.target().extension();
                 let note = if self.overwrite {
                     "같은 이름이 있으면 새 파일로 바꿔 넣습니다. 변환이 실패하면 원래 파일은 그대로 남습니다.".to_string()
                 } else {
-                    format!("같은 이름이 있으면 「이름 (2).{ext}」처럼 새 이름으로 만듭니다.")
+                    format!("같은 이름이 있으면 이름 뒤에 (2)를 붙여 새 .{ext} 파일로 만듭니다.")
                 };
-                ui.label(RichText::new(note).size(12.5).color(p.muted));
+                ui.add_space(2.0);
+                Frame::new().inner_margin(Margin { left: 44, ..Default::default() }).show(ui, |ui| {
+                    ui.label(RichText::new(note).size(13.0).color(p.muted));
+                });
             });
             },
         );
@@ -1015,19 +1068,16 @@ impl App {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     let cancelling = batch.cancel.load(Ordering::Relaxed);
                     let label = if cancelling {
-                        "이 파일까지만…"
+                        "멈추는 중"
                     } else {
                         "멈추기"
                     };
-                    if ui
-                        .add_enabled(!cancelling, egui::Button::new(label))
-                        .clicked()
-                    {
+                    if button(ui, p, Btn::Weak, label, !cancelling).clicked() {
                         stop = true;
                     }
                     ui.add(
                         egui::Label::new(
-                            RichText::new(format!("{name} — {}", batch.stage))
+                            RichText::new(format!("{name}  {}", batch.stage))
                                 .size(12.5)
                                 .color(p.muted),
                         )
@@ -1038,7 +1088,8 @@ impl App {
             if stop {
                 batch.cancel.store(true, Ordering::Relaxed);
             }
-            gauge(ui, p, self.shown, true);
+            ui.add_space(4.0);
+            gauge(ui, p, self.shown);
             ui.label(
                 RichText::new(format!("{:.0}%", self.shown * 100.0))
                     .size(12.0)
@@ -1068,7 +1119,7 @@ impl App {
                     p.err_soft,
                     p.err,
                     format!(
-                        "{}개 변환 · {failed}개 실패 — 실패한 파일을 펼쳐 이유를 확인하세요",
+                        "{}개 변환, {failed}개 실패. 실패한 파일을 눌러 이유를 확인하세요",
                         done.len()
                     ),
                 )
@@ -1077,37 +1128,60 @@ impl App {
                     p.warn_soft,
                     p.warn,
                     format!(
-                        "{}개 모두 변환했습니다 · 편집기에서 확인할 곳 {checks}곳",
+                        "{}개 모두 변환했습니다. 편집기에서 확인할 곳이 {checks}곳 있어요",
                         done.len()
                     ),
                 )
             } else {
                 (
-                    p.accent_soft,
+                    p.ok_soft,
                     p.ok,
                     format!("{}개 모두 변환했습니다", done.len()),
                 )
+            };
+            let mark = if failed > 0 {
+                Mark::Err
+            } else if checks > 0 {
+                Mark::Warn
+            } else {
+                Mark::Ok
             };
             let last = done.last().and_then(|j| match &j.state {
                 JobState::Done { output, .. } => Some(output.clone()),
                 _ => None,
             });
             let mut open_folder = false;
+            // 알림 띠: 아이콘 + 한 줄 글 + 오른쪽 글자 단추
             Frame::new()
                 .fill(fill)
-                .corner_radius(10)
-                .inner_margin(Margin::symmetric(12, 8))
+                .corner_radius(16)
+                .inner_margin(Margin {
+                    left: 16,
+                    right: 8,
+                    top: 6,
+                    bottom: 6,
+                })
                 .show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new(text).font(bold(13.5)).color(ink));
-                        if last.is_some() {
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                if ui.button("폴더 열기").clicked() {
-                                    open_folder = true;
-                                }
+                        ui.set_min_height(36.0);
+                        let (r, _) = ui.allocate_exact_size(Vec2::splat(22.0), Sense::hover());
+                        mark_badge(ui.painter(), r.center(), mark, ink, fill);
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if last.is_some()
+                                && button(ui, p, Btn::Text, "폴더 열기", true).clicked()
+                            {
+                                open_folder = true;
+                            }
+                            ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                ui.add(
+                                    egui::Label::new(
+                                        RichText::new(text).font(bold(13.5)).color(ink),
+                                    )
+                                    .truncate(),
+                                );
                             });
-                        }
+                        });
                     });
                 });
             if open_folder && let Some(path) = last {
@@ -1122,18 +1196,17 @@ impl App {
             (_, 1) => ("변환하기".to_string(), true),
             (_, n) => (format!("{n}개 변환하기"), true),
         };
-        // 양옆의 grow 가 남는 폭을 나눠 가져 글자가 가운데에 온다.
-        let text = RichText::new(label).font(bold(16.0)).color(if enabled {
-            p.accent_ink
-        } else {
-            p.muted
-        });
-        let button = egui::Button::new((egui::Atom::grow(), text, egui::Atom::grow()))
-            .fill(if enabled { p.accent } else { p.line })
-            .stroke(Stroke::NONE)
-            .corner_radius(10)
-            .min_size(egui::vec2(ui.available_width(), 46.0));
-        let response = ui.add_enabled(enabled, button);
+        ui.add_space(4.0);
+        let response = button_ex(
+            ui,
+            p,
+            Btn::Filled,
+            &label,
+            enabled,
+            ui.available_width(),
+            56.0,
+            bold(17.0),
+        );
         if enabled {
             response.clone().on_hover_text("Enter");
         }
@@ -1145,42 +1218,235 @@ impl App {
 
 // ───────────────────────────── 부품 ─────────────────────────────
 
-/// 번호가 붙은 카드. `aside` 는 제목 줄 오른쪽.
-fn card(
-    ui: &mut Ui,
-    p: Pal,
-    step: u8,
-    title: &str,
-    aside: impl FnOnce(&mut Ui),
-    body: impl FnOnce(&mut Ui),
-) {
+/// 테두리 · 그림자 없는 흰 카드(모서리 20). `aside` 는 제목 줄 오른쪽.
+fn card(ui: &mut Ui, p: Pal, title: &str, aside: impl FnOnce(&mut Ui), body: impl FnOnce(&mut Ui)) {
     Frame::new()
         .fill(p.card)
-        .stroke(Stroke::new(1.0, p.line))
-        .corner_radius(14)
-        .inner_margin(Margin::same(16))
+        .corner_radius(20)
+        .inner_margin(Margin {
+            left: 20,
+            right: 20,
+            top: 18,
+            bottom: 20,
+        })
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
             ui.spacing_mut().item_spacing.y = 8.0;
             ui.horizontal(|ui| {
-                let (rect, _) = ui.allocate_exact_size(Vec2::splat(22.0), Sense::hover());
-                ui.painter().circle_filled(rect.center(), 11.0, p.accent);
-                ui.painter().text(
-                    rect.center(),
-                    Align2::CENTER_CENTER,
-                    step.to_string(),
-                    bold(12.5),
-                    p.accent_ink,
-                );
-                ui.label(RichText::new(title).font(bold(15.0)).color(p.ink));
+                ui.set_min_height(32.0);
+                ui.label(RichText::new(title).font(bold(18.0)).color(p.ink));
                 aside(ui);
             });
-            ui.add_space(2.0);
+            ui.add_space(4.0);
             body(ui);
         });
 }
 
-/// 끌어다 놓는 곳. `big` 이면 빈 목록용 큰 상자, 아니면 「파일 더하기」 한 줄.
+#[derive(Clone, Copy, PartialEq)]
+enum Btn {
+    /// 꽉 찬 파랑 — 화면에서 하나뿐인 주 행동
+    Filled,
+    /// 회색 바탕 — 보조 행동
+    Weak,
+    /// 파랑 글자만 — 가벼운 행동
+    Text,
+}
+
+/// 토스식 단추(높이 36 · 모서리 10). 누르면 살짝 작아지고 어두워진다.
+fn button(ui: &mut Ui, p: Pal, kind: Btn, label: &str, enabled: bool) -> egui::Response {
+    button_ex(ui, p, kind, label, enabled, 0.0, 36.0, bold(14.0))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn button_ex(
+    ui: &mut Ui,
+    p: Pal,
+    kind: Btn,
+    label: &str,
+    enabled: bool,
+    min_width: f32,
+    height: f32,
+    font: FontId,
+) -> egui::Response {
+    let galley = ui
+        .painter()
+        .layout_no_wrap(label.to_owned(), font, Color32::PLACEHOLDER);
+    let pad = if kind == Btn::Text { 10.0 } else { 16.0 };
+    let size = egui::vec2((galley.size().x + pad * 2.0).max(min_width), height);
+    let sense = if enabled {
+        Sense::click()
+    } else {
+        Sense::hover()
+    };
+    let (rect, response) = ui.allocate_exact_size(size, sense);
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, enabled, label));
+    let hot = enabled && (response.hovered() || response.has_focus());
+    if hot {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    if ui.is_rect_visible(rect) {
+        let pressed = enabled && response.is_pointer_button_down_on();
+        let off = p.ink.gamma_multiply(0.3);
+        let (fill, ink) = match kind {
+            Btn::Filled if enabled => (p.accent, p.accent_ink),
+            Btn::Filled => (p.hover, off),
+            Btn::Weak => (p.hover, if enabled { p.ink2 } else { off }),
+            Btn::Text => (
+                Color32::TRANSPARENT,
+                if enabled { p.accent_deep } else { off },
+            ),
+        };
+        let r = CornerRadius::same(if height > 44.0 { 16 } else { 10 });
+        // 눌렀을 때 살짝 줄어든다(토스의 눌림 효과).
+        let shape = if pressed {
+            rect.shrink2(rect.size() * 0.02)
+        } else {
+            rect
+        };
+        let painter = ui.painter();
+        painter.rect_filled(shape, r, fill);
+        let layer = match (kind, pressed, hot) {
+            (_, true, _) => 0.10,
+            (Btn::Filled, false, true) => 0.06,
+            (_, false, true) => 0.05,
+            _ => 0.0,
+        };
+        if layer > 0.0 {
+            painter.rect_filled(shape, r, Color32::BLACK.gamma_multiply(layer));
+        }
+        if response.has_focus() {
+            painter.rect_stroke(
+                rect.expand(2.0),
+                CornerRadius::same(r.nw + 2),
+                Stroke::new(2.0, p.accent),
+                StrokeKind::Outside,
+            );
+        }
+        painter.galley(shape.center() - galley.size() / 2.0, galley, ink);
+    }
+    response
+}
+
+#[derive(Clone, Copy)]
+enum Icon {
+    Close,
+    ExpandMore,
+    ExpandLess,
+    Folder,
+}
+
+/// 아이콘 단추(32×32). 마우스를 올리면 둥근 회색 바탕이 깔린다.
+fn icon_button(ui: &mut Ui, p: Pal, icon: Icon, tip: &str) -> egui::Response {
+    let (rect, response) = ui.allocate_exact_size(Vec2::splat(32.0), Sense::click());
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tip));
+    let hot = response.hovered() || response.has_focus();
+    if hot {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    let painter = ui.painter();
+    let c = rect.center();
+    let r = CornerRadius::same(8);
+    if response.is_pointer_button_down_on() {
+        painter.rect_filled(rect, r, p.ink.gamma_multiply(0.12));
+    } else if hot {
+        painter.rect_filled(rect, r, p.ink.gamma_multiply(0.07));
+    }
+    if response.has_focus() {
+        painter.rect_stroke(rect, r, Stroke::new(2.0, p.accent), StrokeKind::Inside);
+    }
+    paint_icon(painter, c, icon, p.muted);
+    response.on_hover_text(tip)
+}
+
+fn paint_icon(painter: &egui::Painter, c: Pos2, icon: Icon, color: Color32) {
+    let s = Stroke::new(1.8, color);
+    let v = egui::vec2;
+    match icon {
+        Icon::Close => {
+            painter.line_segment([c + v(-4.5, -4.5), c + v(4.5, 4.5)], s);
+            painter.line_segment([c + v(4.5, -4.5), c + v(-4.5, 4.5)], s);
+        }
+        Icon::ExpandMore => {
+            painter.add(egui::Shape::line(
+                vec![c + v(-5.0, -2.5), c + v(0.0, 2.5), c + v(5.0, -2.5)],
+                s,
+            ));
+        }
+        Icon::ExpandLess => {
+            painter.add(egui::Shape::line(
+                vec![c + v(-5.0, 2.5), c + v(0.0, -2.5), c + v(5.0, 2.5)],
+                s,
+            ));
+        }
+        Icon::Folder => {
+            painter.add(egui::Shape::closed_line(
+                vec![
+                    c + v(-7.0, -5.5),
+                    c + v(-2.5, -5.5),
+                    c + v(-1.0, -3.5),
+                    c + v(7.0, -3.5),
+                    c + v(7.0, 5.5),
+                    c + v(-7.0, 5.5),
+                ],
+                Stroke::new(1.6, color),
+            ));
+        }
+    }
+}
+
+/// 토스 목록의 둥근 네모 아이콘 자리(40×40) 안에 귀 접힌 파란 문서.
+fn doc_icon(ui: &mut Ui, p: Pal) {
+    let (rect, _) = ui.allocate_exact_size(Vec2::splat(40.0), Sense::hover());
+    let painter = ui.painter();
+    painter.rect_filled(rect, CornerRadius::same(12), p.accent_soft);
+    let body = Rect::from_center_size(rect.center(), egui::vec2(15.0, 19.0));
+    let fold = 5.0;
+    let (l, t, r, b) = (body.left(), body.top(), body.right(), body.bottom());
+    painter.add(egui::Shape::convex_polygon(
+        vec![
+            Pos2::new(l, t),
+            Pos2::new(r - fold, t),
+            Pos2::new(r, t + fold),
+            Pos2::new(r, b),
+            Pos2::new(l, b),
+        ],
+        p.accent,
+        Stroke::NONE,
+    ));
+    painter.add(egui::Shape::convex_polygon(
+        vec![
+            Pos2::new(r - fold, t),
+            Pos2::new(r, t + fold),
+            Pos2::new(r - fold, t + fold),
+        ],
+        Color32::WHITE.gamma_multiply(0.6),
+        Stroke::NONE,
+    ));
+    let ink = Stroke::new(1.4, Color32::WHITE);
+    for (y, w) in [(8.0, 8.0), (11.0, 8.0), (14.0, 5.0)] {
+        painter.line_segment(
+            [Pos2::new(l + 3.5, t + y), Pos2::new(l + 3.5 + w, t + y)],
+            ink,
+        );
+    }
+}
+
+/// 돌아가는 원호(진행 중 표시).
+fn spinner_arc(ui: &Ui, painter: &egui::Painter, c: Pos2, r: f32, color: Color32) {
+    let t = ui.input(|i| i.time) as f32;
+    let start = t * 5.0;
+    let sweep = 1.2 + (t * 2.2).sin().abs() * 3.2;
+    let pts: Vec<Pos2> = (0..=20)
+        .map(|k| {
+            let a = start + sweep * k as f32 / 20.0;
+            c + egui::vec2(a.cos(), a.sin()) * r
+        })
+        .collect();
+    painter.add(egui::Shape::line(pts, Stroke::new(2.0, color)));
+    ui.ctx().request_repaint();
+}
+
+/// 끌어다 놓는 곳. `big` 이면 빈 목록용 큰 상자, 아니면 목록 끝의 「파일 추가」 줄.
 fn drop_zone(ui: &mut Ui, p: Pal, height: f32, working: bool, big: bool) -> egui::Response {
     let sense = if working {
         Sense::hover()
@@ -1191,10 +1457,10 @@ fn drop_zone(ui: &mut Ui, p: Pal, height: f32, working: bool, big: bool) -> egui
     let (title, sub) = if big {
         (
             "DOCX 파일을 여기에 끌어다 놓으세요",
-            "여러 파일 · 폴더를 한꺼번에 놓아도 됩니다  ·  눌러서 고르기 (Ctrl+O)",
+            "여러 파일이나 폴더를 한꺼번에 놓아도 됩니다. 눌러서 고를 수도 있어요 (Ctrl+O)",
         )
     } else {
-        ("＋ 파일 더하기", "끌어다 놓기 · 눌러서 고르기 (Ctrl+O)")
+        ("파일 추가", "끌어다 놓거나 눌러서 고르기 (Ctrl+O)")
     };
     response.widget_info(|| {
         egui::WidgetInfo::labeled(egui::Role::Button, !working, format!("{title}. {sub}"))
@@ -1204,57 +1470,75 @@ fn drop_zone(ui: &mut Ui, p: Pal, height: f32, working: bool, big: bool) -> egui
     }
     let lit = !working && (response.hovered() || response.has_focus());
     let painter = ui.painter();
-    painter.rect_filled(
-        rect,
-        CornerRadius::same(12),
-        if lit { p.accent_soft } else { p.sunken },
-    );
-    dashed_rect(
-        painter,
-        rect.shrink(0.5),
-        if lit { p.accent } else { p.line },
-        if lit { 1.6 } else { 1.2 },
-    );
     let ink = if working { p.muted } else { p.ink };
     if big {
-        // 위로 올리는 화살표 + 받침
-        let c = rect.center() - egui::vec2(0.0, 30.0);
-        painter.circle_filled(c, 22.0, if lit { p.card } else { p.accent_soft });
+        painter.rect_filled(
+            rect,
+            CornerRadius::same(16),
+            if lit { p.accent_soft } else { p.sunken },
+        );
+        dashed_rect(
+            painter,
+            rect.shrink(0.5),
+            if lit { p.accent } else { p.outline },
+            if lit { 1.6 } else { 1.2 },
+        );
+        // 위로 올리는 화살표
+        let c = rect.center() - egui::vec2(0.0, 34.0);
+        painter.circle_filled(c, 24.0, if lit { p.card } else { p.accent_soft });
         let s = Stroke::new(2.4, p.accent);
-        painter.line_segment([c + egui::vec2(0.0, 9.0), c + egui::vec2(0.0, -9.0)], s);
-        painter.line_segment([c + egui::vec2(-7.0, -2.0), c + egui::vec2(0.0, -9.0)], s);
-        painter.line_segment([c + egui::vec2(7.0, -2.0), c + egui::vec2(0.0, -9.0)], s);
+        let v = egui::vec2;
+        painter.line_segment([c + v(0.0, 9.0), c + v(0.0, -9.0)], s);
+        painter.line_segment([c + v(-7.0, -2.0), c + v(0.0, -9.0)], s);
+        painter.line_segment([c + v(7.0, -2.0), c + v(0.0, -9.0)], s);
         painter.text(
             rect.center() + egui::vec2(0.0, 14.0),
             Align2::CENTER_CENTER,
             title,
-            bold(15.5),
+            bold(16.0),
             ink,
         );
-        painter.text(
-            rect.center() + egui::vec2(0.0, 38.0),
-            Align2::CENTER_CENTER,
+        let sub = painter.layout(
+            sub.into(),
+            FontId::proportional(13.0),
+            p.muted,
+            rect.width() - 48.0,
+        );
+        painter.galley(
+            Pos2::new(rect.center().x - sub.size().x / 2.0, rect.center().y + 30.0),
             sub,
-            FontId::proportional(12.5),
             p.muted,
         );
     } else {
-        let galley_title =
-            painter.layout_no_wrap(title.into(), bold(13.5), if lit { p.accent } else { ink });
-        let galley_sub = painter.layout_no_wrap(sub.into(), FontId::proportional(12.0), p.muted);
-        let total = galley_title.size().x + 12.0 + galley_sub.size().x;
-        let left = rect.center().x - total / 2.0;
-        painter.galley(
-            Pos2::new(left, rect.center().y - galley_title.size().y / 2.0),
-            galley_title.clone(),
-            ink,
+        // 목록 줄과 같은 꼴: 왼쪽 둥근 네모 안 + 표시, 파랑 제목, 회색 설명
+        if lit {
+            painter.rect_filled(rect, CornerRadius::same(14), p.hover);
+        }
+        let icon = Rect::from_min_size(
+            Pos2::new(rect.left() + 8.0, rect.center().y - 20.0),
+            Vec2::splat(40.0),
         );
+        painter.rect_filled(icon, CornerRadius::same(12), p.hover);
+        let c = icon.center();
+        let s = Stroke::new(2.0, if working { p.muted } else { p.accent });
+        painter.line_segment([c - egui::vec2(7.0, 0.0), c + egui::vec2(7.0, 0.0)], s);
+        painter.line_segment([c - egui::vec2(0.0, 7.0), c + egui::vec2(0.0, 7.0)], s);
+        let left = icon.right() + 12.0;
+        let t = painter.layout_no_wrap(
+            title.into(),
+            bold(15.0),
+            if working { p.muted } else { p.accent_deep },
+        );
+        let th = t.size().y;
         painter.galley(
-            Pos2::new(
-                left + galley_title.size().x + 12.0,
-                rect.center().y - galley_sub.size().y / 2.0,
-            ),
-            galley_sub,
+            Pos2::new(left, rect.center().y - th / 2.0),
+            t.clone(),
+            p.accent_deep,
+        );
+        let g = painter.layout_no_wrap(sub.into(), FontId::proportional(13.0), p.muted);
+        painter.galley(
+            Pos2::new(left + t.size().x + 10.0, rect.center().y - g.size().y / 2.0),
+            g,
             p.muted,
         );
     }
@@ -1263,7 +1547,7 @@ fn drop_zone(ui: &mut Ui, p: Pal, height: f32, working: bool, big: bool) -> egui
 
 fn dashed_rect(painter: &egui::Painter, rect: Rect, color: Color32, width: f32) {
     let stroke = Stroke::new(width, color);
-    let r = 12.0;
+    let r = 16.0;
     let (l, t, rt, b) = (rect.left(), rect.top(), rect.right(), rect.bottom());
     let dash = 6.0;
     let gap = 4.0;
@@ -1332,13 +1616,13 @@ fn format_tile(
     } else {
         Sense::hover()
     };
-    let (rect, response) = ui.allocate_exact_size(egui::vec2(width, 66.0), sense);
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(width, 76.0), sense);
     response.widget_info(|| {
         egui::WidgetInfo::selected(
             egui::Role::RadioButton,
             enabled,
             selected,
-            format!("{name} · {editor}"),
+            format!("{name}, {editor}"),
         )
     });
     if response.hovered() && enabled {
@@ -1346,44 +1630,131 @@ fn format_tile(
     }
     let hot = enabled && (response.hovered() || response.has_focus());
     let painter = ui.painter();
-    let fill = if selected { p.accent_soft } else { p.card };
-    let stroke = if selected {
-        Stroke::new(2.0, p.accent)
-    } else if hot {
-        Stroke::new(1.0, p.accent)
+    let r = CornerRadius::same(16);
+    // 고른 것: 옅은 파랑 바탕 + 파랑 테두리. 아니면 회색 바탕만.
+    if selected {
+        painter.rect(
+            rect,
+            r,
+            p.accent_soft,
+            Stroke::new(2.0, p.accent),
+            StrokeKind::Inside,
+        );
     } else {
-        Stroke::new(1.0, p.line)
-    };
-    painter.rect(
-        rect,
-        CornerRadius::same(12),
-        fill,
-        stroke,
-        StrokeKind::Inside,
-    );
-    let left = rect.left() + 16.0;
+        painter.rect_filled(rect, r, p.hover);
+        if hot {
+            painter.rect_filled(rect, r, Color32::BLACK.gamma_multiply(0.04));
+        }
+    }
+    if response.has_focus() {
+        painter.rect_stroke(
+            rect.expand(2.0),
+            CornerRadius::same(18),
+            Stroke::new(2.0, p.accent),
+            StrokeKind::Outside,
+        );
+    }
+    let left = rect.left() + 18.0;
     painter.text(
-        Pos2::new(left, rect.top() + 22.0),
+        Pos2::new(left, rect.top() + 27.0),
         Align2::LEFT_CENTER,
         name,
-        bold(17.0),
-        if selected { p.accent } else { p.ink },
+        bold(18.0),
+        if selected { p.accent_deep } else { p.ink },
     );
     painter.text(
-        Pos2::new(left, rect.top() + 45.0),
+        Pos2::new(left, rect.top() + 51.0),
         Align2::LEFT_CENTER,
         editor,
-        FontId::proportional(12.5),
-        p.muted,
+        FontId::proportional(13.0),
+        if selected { p.accent_deep } else { p.muted },
     );
-    // 오른쪽 위: 고름 표시(원 + 체크)
-    let c = Pos2::new(rect.right() - 20.0, rect.top() + 20.0);
-    if selected {
-        painter.circle_filled(c, 9.0, p.accent);
-        check_mark(painter, c, 4.5, p.accent_ink);
-    } else {
-        painter.circle_stroke(c, 8.5, Stroke::new(1.4, p.line));
+    // 오른쪽: 체크 원
+    check_circle(
+        painter,
+        p,
+        Pos2::new(rect.right() - 24.0, rect.top() + 26.0),
+        selected,
+        enabled,
+    );
+    response
+}
+
+/// 토스식 체크 원: 켜면 파랑, 꺼지면 회색 원 안에 흰 체크.
+fn check_circle(painter: &egui::Painter, p: Pal, c: Pos2, on: bool, enabled: bool) {
+    let fill = match (on, enabled) {
+        (true, true) => p.accent,
+        (true, false) => p.accent.gamma_multiply(0.4),
+        (false, _) => p.outline,
+    };
+    painter.circle_filled(c, 11.0, fill);
+    check_mark(painter, c, 5.0, Color32::WHITE);
+}
+
+/// 하나만 고르는 줄(라디오 역할). 글자까지 줄 전체가 눌린다.
+fn radio(ui: &mut Ui, p: Pal, on: bool, label: &str) -> egui::Response {
+    choice(ui, p, label, on, true)
+}
+
+/// 켜고 끄는 줄(체크박스 역할).
+fn checkbox(ui: &mut Ui, p: Pal, value: &mut bool, label: &str) -> egui::Response {
+    let mut r = choice(ui, p, label, *value, false);
+    if r.clicked() {
+        *value = !*value;
+        r.mark_changed();
     }
+    r
+}
+
+fn choice(ui: &mut Ui, p: Pal, label: &str, on: bool, radio: bool) -> egui::Response {
+    let enabled = ui.is_enabled();
+    let galley = ui.painter().layout_no_wrap(
+        label.to_owned(),
+        FontId::proportional(15.0),
+        Color32::PLACEHOLDER,
+    );
+    let size = egui::vec2(44.0 + galley.size().x + 12.0, 40.0);
+    let (rect, response) = ui.allocate_exact_size(size, Sense::click());
+    response.widget_info(|| {
+        egui::WidgetInfo::selected(
+            if radio {
+                egui::Role::RadioButton
+            } else {
+                egui::Role::CheckBox
+            },
+            enabled,
+            on,
+            label,
+        )
+    });
+    let painter = ui.painter();
+    let r = CornerRadius::same(10);
+    if enabled && response.is_pointer_button_down_on() {
+        painter.rect_filled(rect, r, p.ink.gamma_multiply(0.10));
+    } else if enabled && (response.hovered() || response.has_focus()) {
+        painter.rect_filled(rect, r, p.hover);
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    if response.has_focus() {
+        painter.rect_stroke(rect, r, Stroke::new(2.0, p.accent), StrokeKind::Inside);
+    }
+    check_circle(
+        painter,
+        p,
+        Pos2::new(rect.left() + 20.0, rect.center().y),
+        on,
+        enabled,
+    );
+    let ink = if enabled {
+        p.ink
+    } else {
+        p.ink.gamma_multiply(0.38)
+    };
+    painter.galley(
+        Pos2::new(rect.left() + 44.0, rect.center().y - galley.size().y / 2.0),
+        galley,
+        ink,
+    );
     response
 }
 
@@ -1408,6 +1779,7 @@ fn job_row(ui: &mut Ui, p: Pal, job: &mut Job, working: bool, batch: Option<&Bat
     let mut action = RowAction::None;
     let checks = job.checks();
     let expandable = matches!(job.state, JobState::Done { .. } | JobState::Failed(_));
+    let fraction = batch.map_or(0.0, |b| b.fraction);
     let (sub, sub_color) = match &job.state {
         JobState::Waiting => (
             job.input
@@ -1416,96 +1788,106 @@ fn job_row(ui: &mut Ui, p: Pal, job: &mut Job, working: bool, batch: Option<&Bat
                 .unwrap_or_default(),
             p.muted,
         ),
-        JobState::Running => {
-            let (f, s) = batch.map_or((0.0, String::new()), |b| (b.fraction, b.stage.clone()));
-            (format!("{s} · {:.0}%", f * 100.0), p.accent)
-        }
-        JobState::Done { output, .. } => {
-            let mut s = format!("→ {}", file_name(output));
-            if checks > 0 {
-                s.push_str(&format!("  ·  확인할 곳 {checks}"));
-            }
-            (s, if checks > 0 { p.warn } else { p.ok })
-        }
+        JobState::Running => (batch.map(|b| b.stage.clone()).unwrap_or_default(), p.muted),
+        JobState::Done { output, .. } => (format!("→ {}", file_name(output)), p.muted),
         JobState::Failed(f) => (failure_title(f).to_string(), p.err),
     };
 
-    let frame = Frame::new()
-        .fill(p.sunken)
-        .stroke(Stroke::new(1.0, p.line))
-        .corner_radius(10)
-        .inner_margin(Margin::symmetric(12, 9));
-    let inner = frame.show(ui, |ui| {
-        ui.set_width(ui.available_width());
-        ui.horizontal(|ui| {
-            status_icon(ui, p, &job.state, checks);
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                if !working
-                    && ui
-                        .add(
-                            egui::Button::new(RichText::new("✕").size(13.0).color(p.muted))
-                                .frame(false),
-                        )
-                        .on_hover_text("목록에서 빼기")
-                        .clicked()
-                {
-                    action = RowAction::Remove;
-                }
-                if let JobState::Done { output, .. } = &job.state
-                    && ui.small_button("폴더 열기").clicked()
-                {
-                    action = RowAction::Reveal(output.clone());
-                }
-                if expandable {
-                    let label = if job.open { "접기" } else { "자세히" };
-                    if ui
-                        .add(
-                            egui::Button::new(RichText::new(label).size(12.5).color(p.accent))
-                                .frame(false),
-                        )
-                        .clicked()
+    // 바탕(상태 층)은 내용을 그린 뒤 크기를 알고 채운다.
+    let bg = ui.painter().add(egui::Shape::Noop);
+    let inner = Frame::new()
+        .inner_margin(Margin {
+            left: 8,
+            right: 4,
+            top: 8,
+            bottom: 8,
+        })
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 4.0;
+                doc_icon(ui, p);
+                ui.add_space(8.0);
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if !working && icon_button(ui, p, Icon::Close, "목록에서 빼기").clicked()
                     {
-                        job.open = !job.open;
+                        action = RowAction::Remove;
                     }
-                }
-                ui.with_layout(Layout::top_down(Align::LEFT), |ui| {
-                    ui.spacing_mut().item_spacing.y = 1.0;
-                    ui.add(
-                        egui::Label::new(
-                            RichText::new(file_name(&job.input)).size(14.0).color(p.ink),
-                        )
-                        .truncate(),
-                    );
-                    ui.add(
-                        egui::Label::new(RichText::new(sub).size(12.0).color(sub_color)).truncate(),
-                    );
+                    if let JobState::Done { output, .. } = &job.state
+                        && icon_button(ui, p, Icon::Folder, "저장한 폴더 열기").clicked()
+                    {
+                        action = RowAction::Reveal(output.clone());
+                    }
+                    if expandable {
+                        let (icon, tip) = if job.open {
+                            (Icon::ExpandLess, "접기")
+                        } else {
+                            (Icon::ExpandMore, "자세히 보기")
+                        };
+                        if icon_button(ui, p, icon, tip).clicked() {
+                            job.open = !job.open;
+                        }
+                    }
+                    ui.add_space(4.0);
+                    status_chip(ui, p, &job.state, checks, fraction);
+                    ui.add_space(8.0);
+                    ui.with_layout(Layout::top_down(Align::LEFT), |ui| {
+                        ui.spacing_mut().item_spacing.y = 1.0;
+                        ui.add(
+                            egui::Label::new(
+                                RichText::new(file_name(&job.input))
+                                    .font(bold(15.0))
+                                    .color(p.ink),
+                            )
+                            .truncate(),
+                        );
+                        ui.add(
+                            egui::Label::new(RichText::new(sub).size(13.0).color(sub_color))
+                                .truncate(),
+                        );
+                    });
                 });
             });
-        });
-        if job.open {
-            ui.add_space(4.0);
-            match &job.state {
-                JobState::Done { report, .. } => summary(ui, p, report),
-                JobState::Failed(f) => {
-                    let (plain, tech) = docx2hwpx_hlt::split_message(&f.message);
-                    ui.label(
-                        RichText::new(failure_title(f))
-                            .font(bold(13.0))
-                            .color(p.err),
-                    );
-                    ui.label(RichText::new(plain).size(12.5).color(p.ink));
-                    if let Some(tech) = tech {
-                        ui.label(
-                            RichText::new(format!("기술 정보(문의할 때 함께 보내 주세요): {tech}"))
-                                .size(11.5)
-                                .color(p.muted),
-                        );
-                    }
-                }
-                _ => {}
+            if job.open {
+                // 글자 줄과 왼쪽을 맞춘다(문서 아이콘 + 틈).
+                Frame::new()
+                    .inner_margin(Margin {
+                        left: 52,
+                        right: 12,
+                        top: 6,
+                        bottom: 6,
+                    })
+                    .show(ui, |ui| match &job.state {
+                        JobState::Done { report, .. } => summary(ui, p, report),
+                        JobState::Failed(f) => {
+                            let (plain, tech) = docx2hwpx_hlt::split_message(&f.message);
+                            ui.label(RichText::new(plain).size(14.0).color(p.ink2));
+                            if let Some(tech) = tech {
+                                ui.label(
+                                    RichText::new(format!(
+                                        "기술 정보(문의할 때 함께 보내 주세요): {tech}"
+                                    ))
+                                    .size(11.5)
+                                    .color(p.muted),
+                                );
+                            }
+                        }
+                        _ => {}
+                    });
             }
-        }
-    });
+        });
+    let rect = inner.response.rect;
+    let fill = if job.open {
+        p.sunken
+    } else if expandable && ui.rect_contains_pointer(rect) {
+        p.hover
+    } else {
+        Color32::TRANSPARENT
+    };
+    ui.painter().set(
+        bg,
+        egui::Shape::rect_filled(rect, CornerRadius::same(14), fill),
+    );
     if expandable && !matches!(action, RowAction::None) {
         return action;
     }
@@ -1522,55 +1904,96 @@ fn job_row(ui: &mut Ui, p: Pal, job: &mut Job, working: bool, batch: Option<&Bat
     action
 }
 
-fn status_icon(ui: &mut Ui, p: Pal, state: &JobState, checks: usize) {
-    let size = Vec2::splat(22.0);
-    if matches!(state, JobState::Running) {
-        ui.add_sized(size, egui::Spinner::new().size(18.0).color(p.accent));
-        return;
-    }
+/// 줄 오른쪽의 상태 배지(토스의 옅은 바탕 + 진한 글자 배지).
+fn status_chip(ui: &mut Ui, p: Pal, state: &JobState, checks: usize, fraction: f32) {
+    let (fill, ink, text) = match state {
+        JobState::Waiting => (p.hover, p.muted, "대기".to_string()),
+        JobState::Running => (
+            p.accent_soft,
+            p.accent_deep,
+            format!("{:.0}%", fraction * 100.0),
+        ),
+        JobState::Done { .. } if checks == 0 => (p.ok_soft, p.ok, "완료".to_string()),
+        JobState::Done { .. } => (p.warn_soft, p.warn, format!("확인 {checks}곳")),
+        JobState::Failed(_) => (p.err_soft, p.err, "실패".to_string()),
+    };
+    let running = matches!(state, JobState::Running);
+    let galley = ui
+        .painter()
+        .layout_no_wrap(text, bold(12.5), Color32::PLACEHOLDER);
+    let lead = if running { 18.0 } else { 0.0 };
+    let size = egui::vec2(galley.size().x + 16.0 + lead, 26.0);
     let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
-    let c = rect.center();
     let painter = ui.painter();
-    match state {
-        JobState::Waiting => {
-            painter.circle_stroke(c, 8.0, Stroke::new(1.6, p.line));
+    painter.rect_filled(rect, CornerRadius::same(6), fill);
+    if running {
+        spinner_arc(
+            ui,
+            painter,
+            Pos2::new(rect.left() + 15.0, rect.center().y),
+            5.0,
+            ink,
+        );
+    }
+    painter.galley(
+        Pos2::new(
+            rect.left() + 8.0 + lead,
+            rect.center().y - galley.size().y / 2.0,
+        ),
+        galley,
+        ink,
+    );
+}
+
+#[derive(Clone, Copy)]
+enum Mark {
+    Ok,
+    Warn,
+    Err,
+}
+
+/// 채운 원 안에 체크 · 느낌표 · 엑스. `hole` 은 안쪽 기호 색(바탕색).
+fn mark_badge(painter: &egui::Painter, c: Pos2, mark: Mark, ink: Color32, hole: Color32) {
+    painter.circle_filled(c, 10.0, ink);
+    match mark {
+        Mark::Ok => check_mark(painter, c, 4.8, hole),
+        Mark::Warn => {
+            painter.text(c, Align2::CENTER_CENTER, "!", bold(13.0), hole);
         }
-        JobState::Done { .. } if checks == 0 => {
-            painter.circle_filled(c, 10.0, p.ok);
-            check_mark(painter, c, 4.8, Color32::WHITE);
+        Mark::Err => {
+            let s = Stroke::new(2.0, hole);
+            let v = egui::vec2;
+            painter.line_segment([c + v(-4.0, -4.0), c + v(4.0, 4.0)], s);
+            painter.line_segment([c + v(4.0, -4.0), c + v(-4.0, 4.0)], s);
         }
-        JobState::Done { .. } => {
-            painter.circle_filled(c, 10.0, p.warn);
-            painter.text(c, Align2::CENTER_CENTER, "!", bold(13.0), Color32::WHITE);
-        }
-        JobState::Failed(_) => {
-            painter.circle_filled(c, 10.0, p.err);
-            let s = Stroke::new(2.0, Color32::WHITE);
-            painter.line_segment([c + egui::vec2(-4.0, -4.0), c + egui::vec2(4.0, 4.0)], s);
-            painter.line_segment([c + egui::vec2(4.0, -4.0), c + egui::vec2(-4.0, 4.0)], s);
-        }
-        JobState::Running => {}
     }
 }
 
-fn gauge(ui: &mut Ui, p: Pal, value: f32, animate: bool) {
-    ui.add(
-        egui::ProgressBar::new(value)
-            .desired_height(8.0)
-            .fill(p.accent)
-            .corner_radius(4.0)
-            .animate(animate),
-    );
+/// 둥근 6px 진행 막대.
+fn gauge(ui: &mut Ui, p: Pal, value: f32) {
+    let h = 6.0;
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), h), Sense::hover());
+    let painter = ui.painter();
+    let r = CornerRadius::same(3);
+    painter.rect_filled(rect, r, p.line);
+    let w = rect.width() * value.clamp(0.0, 1.0);
+    if w > 0.5 {
+        painter.rect_filled(
+            Rect::from_min_size(rect.min, egui::vec2(w.max(h), h)),
+            r,
+            p.accent,
+        );
+    }
 }
 
 fn callout(ui: &mut Ui, fill: Color32, ink: Color32, text: &str) {
     Frame::new()
         .fill(fill)
-        .corner_radius(8)
-        .inner_margin(Margin::symmetric(10, 6))
+        .corner_radius(14)
+        .inner_margin(Margin::symmetric(16, 12))
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
-            ui.label(RichText::new(text).size(12.5).color(ink));
+            ui.label(RichText::new(text).size(13.5).color(ink));
         });
 }
 
@@ -1584,7 +2007,7 @@ fn failure_title(f: &Failure) -> &'static str {
     }
 }
 
-/// 변환 보고 — 무엇을 바꿨는지, 사람이 편집기에서 확인할 곳은 어디인지.
+/// 변환 보고. 무엇을 바꿨는지, 사람이 편집기에서 확인할 곳은 어디인지.
 fn summary(ui: &mut Ui, p: Pal, report: &Value) {
     let n = |k: &str| report[k].as_u64().unwrap_or(0);
     let list = |k: &str| report[k].as_array().cloned().unwrap_or_default();
@@ -1602,26 +2025,32 @@ fn summary(ui: &mut Ui, p: Pal, report: &Value) {
             ("그림 다듬음", n("images_optimized")),
         ] {
             if value > 0 {
-                chip(ui, p, &format!("{label} {value}"));
+                chip(ui, p, label, value);
             }
         }
     });
 
     let subs = list("substitutions");
     if !subs.is_empty() {
-        ui.label(RichText::new("바꾼 글자").font(bold(12.5)).color(p.ink));
+        ui.add_space(4.0);
+        ui.label(RichText::new("바꾼 글자").font(bold(14.0)).color(p.ink));
         for s in subs {
-            ui.label(
-                RichText::new(format!(
-                    "「{}」 {} → 「{}」  {}곳",
-                    s["from"].as_str().unwrap_or(""),
-                    s["codepoints"].as_str().unwrap_or(""),
-                    s["to"].as_str().unwrap_or(""),
-                    s["count"]
-                ))
-                .size(12.5)
-                .color(p.ink),
-            );
+            // 글자 하나는 따옴표 대신 작은 회색 네모에 담아 보인다.
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 6.0;
+                glyph_box(ui, p, s["from"].as_str().unwrap_or(""));
+                ui.label(RichText::new("→").size(13.0).color(p.muted));
+                glyph_box(ui, p, s["to"].as_str().unwrap_or(""));
+                ui.label(
+                    RichText::new(format!(
+                        "{}, {}곳",
+                        s["codepoints"].as_str().unwrap_or(""),
+                        s["count"]
+                    ))
+                    .size(13.0)
+                    .color(p.muted),
+                );
+            });
         }
     }
 
@@ -1636,40 +2065,59 @@ fn summary(ui: &mut Ui, p: Pal, report: &Value) {
         .collect();
     for g in list("glyph_images") {
         check.push(format!(
-            "「{}」({})는 NK-Editor 에 없는 글자라 그림으로 넣었습니다 ({}곳). 편집기에서 글자로 고칠 수 없으니, 고쳐야 하면 Word 원본에서 고친 뒤 다시 변환해 주세요",
+            "{} ({}) 글자는 NK-Editor 에 없어 그림으로 넣었습니다({}곳). 편집기에서 글자로 고칠 수 없으니, 고쳐야 하면 Word 원본에서 고친 뒤 다시 변환해 주세요",
             g["text"].as_str().unwrap_or(""),
             g["codepoints"].as_str().unwrap_or(""),
             g["count"]
         ));
     }
     if !check.is_empty() {
+        ui.add_space(4.0);
         Frame::new()
             .fill(p.warn_soft)
-            .corner_radius(8)
-            .inner_margin(Margin::symmetric(10, 8))
+            .corner_radius(14)
+            .inner_margin(Margin::symmetric(16, 14))
             .show(ui, |ui| {
                 ui.set_width(ui.available_width());
+                ui.spacing_mut().item_spacing.y = 10.0;
                 ui.label(
-                    RichText::new(format!("편집기에서 확인할 곳 {}", check.len()))
-                        .font(bold(12.5))
+                    RichText::new(format!("편집기에서 확인할 곳 {}곳", check.len()))
+                        .font(bold(14.0))
                         .color(p.warn),
                 );
                 for l in &check {
-                    ui.label(RichText::new(format!("•  {l}")).size(12.5).color(p.ink));
+                    ui.label(RichText::new(l).size(13.5).color(p.ink2));
                 }
             });
     }
 }
 
-fn chip(ui: &mut Ui, p: Pal, text: &str) {
-    Frame::new()
-        .fill(p.card)
-        .stroke(Stroke::new(1.0, p.line))
-        .corner_radius(20)
-        .inner_margin(Margin::symmetric(9, 3))
-        .show(ui, |ui| {
-            ui.add(egui::Label::new(RichText::new(text).size(12.0).color(p.ink)).extend());
-        });
+/// 이름과 숫자를 담은 회색 칩. 크기를 먼저 알려 줘야 `horizontal_wrapped` 가 줄을 바꾼다.
+fn chip(ui: &mut Ui, p: Pal, label: &str, value: u64) {
+    let painter = ui.painter();
+    let name = painter.layout_no_wrap(label.to_owned(), FontId::proportional(13.0), p.ink2);
+    let num = painter.layout_no_wrap(value.to_string(), bold(13.0), p.ink);
+    let size = egui::vec2(name.size().x + 6.0 + num.size().x + 24.0, 30.0);
+    let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
+    let painter = ui.painter();
+    painter.rect_filled(rect, CornerRadius::same(8), p.card);
+    let y = rect.center().y;
+    let x = rect.left() + 12.0;
+    let nw = name.size().x;
+    painter.galley(Pos2::new(x, y - name.size().y / 2.0), name, p.ink2);
+    painter.galley(Pos2::new(x + nw + 6.0, y - num.size().y / 2.0), num, p.ink);
+}
+
+/// 글자 하나를 담는 작은 네모.
+fn glyph_box(ui: &mut Ui, p: Pal, text: &str) {
+    let g = ui
+        .painter()
+        .layout_no_wrap(text.to_owned(), bold(15.0), p.ink);
+    let size = egui::vec2(g.size().x.max(14.0) + 14.0, 26.0);
+    let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
+    let painter = ui.painter();
+    painter.rect_filled(rect, CornerRadius::same(6), p.card);
+    painter.galley(rect.center() - g.size() / 2.0, g, p.ink);
 }
 
 /// 저장한 파일을 파일 탐색기에서 보여 준다.
